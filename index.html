@@ -4,8 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="./assets/css/tailwind_output.css" rel="stylesheet">
+    <script src="./assets/js/main.js"></script>
     <title>XMega LatiosX</title>
 </head>
-<body>
+
+<body class="m-0 bg-red-950">
+
+    <video src="assets/media/=).mp4" muted autoplay loop class="bg-video fixed inset-0 w-screen h-screen object-fill -z-10 blur-lg brightness-75"></video>
+    <video id="video" src="assets/media/=).mp4" muted autoplay loop class="main-video w-[98vw] h-[98vh]"></video>
+
+    <script>
+
+        const video = document.querySelector("video");
+
+        document.addEventListener("click", () => {document.getElementById("video").muted = false;});
+
+    </script>
 </body>
 </html>
