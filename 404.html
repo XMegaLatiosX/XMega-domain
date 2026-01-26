@@ -3,16 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script>
-        const video = document.querySelector("video");
-        document.addEventListener("click", () => {
-            document.getElementById("video").muted = false;
-        });
-    </script>
-    <title>XMega LatiosX</title>
+    <link href="assets\css\tailwind_output.css?v=1" rel="stylesheet">
+    <title>404</title>    
 </head>
-<body style="margin: 0;">
-    <video src="assets/media/=).mp4" muted autoplay loop style="position: fixed; inset: 0;width: 100vw; height: 100vh; object-fit: fill; z-index: -1;"></video>
-    <video id="video" src="assets/media/=).mp4" muted autoplay loop style="width: 100vw; height: 100vh;"></video>
+
+<body class="m-0 bg-red-950">
+
+    <video src="assets/media/=).mp4" muted autoplay loop class="bg-video fixed inset-0 w-screen h-screen object-fill -z-10 blur-lg brightness-75"></video>
+    <video id="video" src="assets/media/=).mp4" muted autoplay loop class="main-video w-[99vw] h-[99vh]"></video>
+
+    <script>
+
+        const video = document.querySelector("video");
+
+        document.addEventListener("click", () => {document.getElementById("video").muted = false;});
+
+    </script>
 </body>
 </html>
