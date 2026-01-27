@@ -8,6 +8,21 @@
     animation: shake -2.5264s infinite;
 }
 
+
+
+.page::-webkit-scrollbar {
+    background-color: rgba(255,255, 255, 0%);   
+    @apply w-2;
+}
+.page::-webkit-scrollbar-thumb {
+    @apply rounded-full ;
+    background-color: rgba(255,255, 255,20%);
+}
+.page::-webkit-scrollbar-track {
+    background-color: rgba(255,255, 255,10%);
+    background-color: transparent;
+}
+
 @keyframes shake {
   0% { transform: translate(1px, 1px) rotate(0deg); }
   10% { transform: translate(-1px, -2px) rotate(-1deg); }

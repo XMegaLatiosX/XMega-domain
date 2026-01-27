@@ -6,18 +6,29 @@
     <link href="assets\css\tailwind_output.css?v=1" rel="stylesheet">
     <title>XMega LatiosX</title>    
 </head>
+<body class="m-0 bg-black">
+    <div class="w-full h-screen overflow-y-auto page justify-items-center">
 
-<body class="m-0 bg-red-950">
-
-    <video src="assets/media/=).mp4" muted autoplay loop class="bg-video fixed inset-0 w-screen h-screen object-fill -z-10 blur-lg brightness-75"></video>
-    <video id="video" src="assets/media/=).mp4" muted autoplay loop class="main-video w-[99vw] h-[99vh]"></video>
-
-    <script>
-
-        const video = document.querySelector("video");
-
-        document.addEventListener("click", () => {document.getElementById("video").muted = false;});
-
-    </script>
+        <header class="absolute top-0">
+            <div>
+                <ul>
+                    <li><a class="text-indigo-200" href="/blog/index.html">updates</a></li>
+                    <li><a class="text-indigo-200" href="/gallery/index.html">gallery</a></li>
+                    <li><a class="text-indigo-200" href="/programming/index.html">programming</a></li>
+                    <li><a class="text-indigo-200" href="/pages/progress.html">progress</a></li>
+                    <li><a class="text-indigo-200" href="/pages/about.html">about</a></li>
+                    <li><a class="text-indigo-200" href="/music/index.html">music</a></li>
+                </ul>
+            </div>
+        </header>
+        <main class="w-full bg-gray-600">
+            <img src="assets/media/home-bg.png" class="w-full absolute -z-50">
+            <h1 class="text-indigo-200">XMega LatiosX</h1>
+        </main>
+        <footer class="text-indigo-200">
+            © 2025 XMega
+            Constantly Developing.
+        </footer>
+    </div>
 </body>
 </html>
