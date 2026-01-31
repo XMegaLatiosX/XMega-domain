@@ -11,6 +11,7 @@
     --color-cyan-300: oklch(86.5% 0.127 207.078);
     --color-cyan-500: oklch(71.5% 0.143 215.221);
     --color-cyan-600: oklch(60.9% 0.126 221.723);
+    --color-cyan-700: oklch(52% 0.105 223.128);
     --color-cyan-950: oklch(30.2% 0.056 229.695);
     --color-blue-50: oklch(97% 0.014 254.604);
     --color-indigo-200: oklch(87% 0.065 274.039);
@@ -654,6 +655,9 @@
   }
   .text-cyan-600 {
     color: var(--color-cyan-600);
+  }
+  .text-cyan-700 {
+    color: var(--color-cyan-700);
   }
   .text-indigo-200 {
     color: var(--color-indigo-200);
