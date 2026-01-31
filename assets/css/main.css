@@ -8,7 +8,12 @@
     animation: shake -2.5264s infinite;
 }
 
-
+.pixel-art {
+    image-rendering: pixelated;
+}
+.categorys::-webkit-scrollbar {
+    display: none;
+}
 
 .page::-webkit-scrollbar {
     background-color: rgba(255,255, 255, 0%);   
