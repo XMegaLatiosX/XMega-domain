@@ -9,7 +9,8 @@ function side_bar_interaction() {
 
     
     const news = document.createElement('a');
-    
+
+
     const progress = document.createElement('a');
     const about = document.createElement('a');
 
@@ -27,6 +28,31 @@ function side_bar_interaction() {
     const discord_social_icon = document.createElement('a');
     const instagram_social_icon = document.createElement('a');
     const social_icon = document.createElement('a');
+
+    const social_link_div = document.createElement('div');
+
+    social_link_div.appendChild(discord_social_icon);
+    social_link_div.appendChild(instagram_social_icon);
+    social_link_div.appendChild(social_icon);
+
+    news.className = "sidebar_button";
+    progress.className = "sidebar_button";
+    about.className = "sidebar_button";
+    error.className = "sidebar_button";
+    support_me.className = "sidebar_button";
+    configurations.className = "sidebar_button";
+    bug_report_button.className = "sidebar_button";
+    feedback_button.className = "sidebar_button";
+
+    sidebar_div.appendChild(news);
+    sidebar_div.appendChild(progress);
+    sidebar_div.appendChild(about);
+    sidebar_div.appendChild(error);
+    sidebar_div.appendChild(support_me);
+    sidebar_div.appendChild(configurations);
+    sidebar_div.appendChild(bug_report_button);
+    sidebar_div.appendChild(feedback_button);
+    sidebar_div.appendChild(social_link_div);
 }
 
 // contact me 
