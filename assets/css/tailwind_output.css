@@ -434,6 +434,42 @@
   font-weight: var(--font-weight-bold);
   color: var(--color-cyan-600);
 }
+.pixel_art_div {
+  margin-bottom: calc(var(--spacing) * 2);
+  height: calc(var(--spacing) * 36);
+  width: calc(var(--spacing) * 36);
+  border-radius: var(--radius-md);
+  background-color: var(--color-gray-800);
+  &:hover {
+    @media (hover: hover) {
+      border-style: var(--tw-border-style);
+      border-width: 2px;
+    }
+  }
+  &:hover {
+    @media (hover: hover) {
+      border-color: var(--color-cyan-900);
+    }
+  }
+}
+.pixel_art {
+  height: calc(var(--spacing) * 24);
+  width: 100%;
+  border-radius: var(--radius-md);
+}
+.pixel_art_description_div {
+  display: flex;
+  height: calc(var(--spacing) * 12);
+  align-items: center;
+  justify-content: center;
+}
+.pixel_art_title {
+  font-size: var(--text-xl);
+  line-height: var(--tw-leading, var(--text-xl--line-height));
+  --tw-font-weight: var(--font-weight-bold);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-cyan-600);
+}
 .main-video {
   animation: shake 1.2632s infinite;
 }
