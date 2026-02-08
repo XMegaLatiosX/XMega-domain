@@ -14,11 +14,11 @@ function NavUpperBar() {
     return (
         <div className="categorys bg-gray-900 w-full h-12 flex justify-around overflow-scroll">
             <UpperBarButton to="/about" label="about"></UpperBarButton>
-            {/* <UpperBarButton to="../pages/blog/index.jsx" label="blog"></UpperBarButton>
-            <UpperBarButton to="../pages/about" label="music"></UpperBarButton>
-            <UpperBarButton to="../pages/about" label="gallery"></UpperBarButton>
-            <UpperBarButton to="../pages/about" label="programming"></UpperBarButton>
-            <UpperBarButton to="../pages/about" label="progress"></UpperBarButton> */}
+            <UpperBarButton to="/blog" label="blog"></UpperBarButton>
+            <UpperBarButton to="/music" label="music"></UpperBarButton>
+            <UpperBarButton to="/gallery" label="gallery"></UpperBarButton>
+            <UpperBarButton to="/programming" label="programming"></UpperBarButton>
+            <UpperBarButton to="/progress" label="progress"></UpperBarButton>
         </div>
     )
 }
