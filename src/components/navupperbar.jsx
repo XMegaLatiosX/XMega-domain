@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom"
+
 function UpperBarButton({ label, to }) {
     return (
         <Link className="h-full flex justify-center items-center" to={to}>
@@ -11,7 +13,7 @@ function UpperBarButton({ label, to }) {
 function NavUpperBar() {
     return (
         <div className="categorys bg-gray-900 w-full h-12 flex justify-around overflow-scroll">
-            <UpperBarButton to="../pages/about.jsx" label="about"></UpperBarButton>
+            <UpperBarButton to="/about" label="about"></UpperBarButton>
             {/* <UpperBarButton to="../pages/blog/index.jsx" label="blog"></UpperBarButton>
             <UpperBarButton to="../pages/about" label="music"></UpperBarButton>
             <UpperBarButton to="../pages/about" label="gallery"></UpperBarButton>
