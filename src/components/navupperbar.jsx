@@ -12,7 +12,7 @@ function UpperBarButton({ label, to }) {
 
 function NavUpperBar() {
     return (
-        <div className="categorys bg-gray-900 w-full h-12 flex justify-around overflow-scroll">
+        <div className="UpperBar bg-gray-900 w-full h-12 flex justify-around overflow-scroll">
             <UpperBarButton to="/about" label="about"></UpperBarButton>
             <UpperBarButton to="/blog" label="blog"></UpperBarButton>
             <UpperBarButton to="/music" label="music"></UpperBarButton>

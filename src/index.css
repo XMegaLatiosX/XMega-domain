@@ -11,7 +11,7 @@
 .pixel-art {
     image-rendering: pixelated;
 }
-.categorys::-webkit-scrollbar {
+.UpperBar::-webkit-scrollbar {
     display: none;
 }
 
