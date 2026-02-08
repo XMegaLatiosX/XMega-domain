@@ -1,6 +1,7 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import Home from './pages/home'
 import About from './pages/about'
+import Notfound from './pages/404'
 
 function App() {
 
@@ -9,12 +10,9 @@ function App() {
         <Routes>
             <Route path="/" element={<Home/>} />
             <Route path="/about" element={<About/>} />
-            <Route path="*" element={<h1>Not Found</h1>} />
+            <Route path="*" element={<Notfound/>} />
         </Routes>
     </BrowserRouter>
-//       <div className='page w-full h-screen overflow-y-auto justify-items-center flex flex-col'>
-//           <Home></Home>
-//       </div>
     )
 }
 

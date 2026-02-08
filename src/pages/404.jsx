@@ -1,23 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="assets\css\tailwind_output.css?v=1" rel="stylesheet">
-    <title>404</title>    
-</head>
-
-<body class="m-0 bg-red-950">
-
-    <video src="assets/media/=).mp4" muted autoplay loop class="bg-video fixed inset-0 w-screen h-screen object-fill -z-10 blur-lg brightness-75"></video>
-    <video id="video" src="assets/media/=).mp4" muted autoplay loop class="main-video w-[99vw] h-[99vh]"></video>
-
-    <script>
-
-        const video = document.querySelector("video");
-
-        document.addEventListener("click", () => {document.getElementById("video").muted = false;});
-
-    </script>
-</body>
-</html>
+function Notfound() {
+    return (
+        <div className="m-0  w-full h-full overflow-hidden" onClick={() => {document.getElementById("video").muted = false}}>
+            <video src="src\assets\videos\=).mp4" muted autoPlay loop className="bg-video fixed inset-0 w-screen h-screen object-fill -z-10 blur-lg brightness-75"></video>
+            <video id="video" src="src\assets\videos\=).mp4" muted autoPlay loop className="main-video w-[99vw] h-[99vh]"></video>
+        </div>
+    )
+}
+export default Notfound
