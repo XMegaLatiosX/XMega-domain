@@ -18,7 +18,7 @@ function Header() {
 
             <img className="pixel-art h-2/3 w-3/12" src="src/assets/images/soundwaveplaceholder.png"/>
 
-            <div class="h-full w-16 flex items-center">
+            <div className="h-full w-16 flex items-center">
                 <a target="_blank" href="https://www.twitch.tv/xmegalatiosx">🔴Live</a>
             </div>
         </header>
