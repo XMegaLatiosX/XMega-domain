@@ -1,3 +1,18 @@
+import Header from "../../components/header"
+import NavUpperBar from "../../components/navupperbar"
+import Screen from "../../components/Screen"
+import Sidebar from "../../components/sidebar"
+
+function PixelArtPage() {
+    return (
+        <Screen>
+            <Header/>
+            <NavUpperBar/>
+            <Sidebar/>
+        </Screen>
+    )
+}
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
