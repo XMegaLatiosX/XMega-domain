@@ -1,7 +1,7 @@
 import fs from "fs"
 import path from "path"
 
-const dir = path.resolve("/media/pixelarts")
+const dir = path.resolve("public/media/pixelarts")
 const outputFile = path.resolve("src/data/pixelarts.json")
 
 
@@ -13,7 +13,7 @@ const pieces = files.map(piece => {
         name: piece.name,
         size: stats.size,
         created: stats.birthtime,
-        src: '/media/pixelarts/${piece.name}'
+        src: 'public/media/pixelarts/${piece.name}'
     }
 })
 
