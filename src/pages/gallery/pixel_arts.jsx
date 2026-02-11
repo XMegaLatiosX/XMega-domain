@@ -2,7 +2,7 @@ import Header from "../../components/header"
 import NavUpperBar from "../../components/navupperbar"
 import Screen from "../../components/Screen"
 import Sidebar from "../../components/sidebar"
-
+import pixelarts from "../../data/pixelarts.json"
 
 
 function Piece({ name, src, to }) {
@@ -23,7 +23,12 @@ function PixelArtPage() {
             <NavUpperBar/>
             <Sidebar/>
             <main className="relative w-screen h-[calc(100vh-7rem)] overflow-auto flex flex-wrap content-start justify-around pt-4 px-1.5">
-            { }
+            {
+                pixelarts.map(item => {
+                    console.log("oxe");
+                    <img key={item.name} src={item.src}/>
+                }) 
+            }
             </main>
         </Screen>
     )
