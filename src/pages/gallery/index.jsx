@@ -16,7 +16,7 @@ function Categorie({ name, src, to }) {
 }
 
 
-function GalleryPage() {
+function GalleryHome() {
     return (
         <Screen>
             <Header />
@@ -25,13 +25,13 @@ function GalleryPage() {
 
             <main className="relative w-screen h-[calc(100vh-7rem)] overflow-auto flex flex-wrap content-start justify-around pt-4 px-1.5">
 
-                <Categorie to="/gallery/pixelart" src="src\assets\pixelarts\NICK POMNI PNG.png" name="pixel arts" />
-                <Categorie to="/gallery/edits" src="src\assets\pixelarts\NICK POMNI PNG.png" name="edits" />
-                <Categorie to="/gallery/dance" src="src\assets\pixelarts\NICK POMNI PNG.png" name="dance" />
-                <Categorie to="/gallery/photos" src="src\assets\pixelarts\NICK POMNI PNG.png" name="photos" />
+                <Categorie to="/gallery/pixelarts" src="public/media/pixelarts/NICK POMNI PNG.png" name="pixel arts" />
+                <Categorie to="/gallery/edits" src="public/media/pixelarts/NICK POMNI PNG.png" name="edits" />
+                <Categorie to="/gallery/dance" src="public/media/pixelarts/NICK POMNI PNG.png" name="dance" />
+                <Categorie to="/gallery/photos" src="public/media/pixelarts/NICK POMNI PNG.png" name="photos" />
 
             </main>
         </Screen>
     )
 }
-export default GalleryPage
+export default GalleryHome

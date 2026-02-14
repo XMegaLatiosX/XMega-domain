@@ -9,8 +9,8 @@ function About() {
             <Header></Header>
             <NavUpperBar></NavUpperBar>
             <Sidebar></Sidebar>
-            <main class="w-screen h-[calc(100vh-7rem)] overflow-auto p-2">
-                <p class="text-cyan-700">
+            <main className="w-screen h-[calc(100vh-7rem)] overflow-auto p-2">
+                <p className="text-cyan-700">
                     This website is a lie. <br />
                     It's an excuse to create and show. <br />
                     Surely I learned a lot and discovered new things in the way, but the whole purpose of that was to experiment what I can pull out, not only as a dev,
