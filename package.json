@@ -8,7 +8,10 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "generate": "node src/scripts/mediaGenerator.js"
+    "generate": "node src/scripts/mediaGenerator.js",
+    "twitch": "node src/scripts/twitch-live.js",
+    "dev:host": "vite --host",
+    "dev:full": "concurrently \"npm run dev:host\" \"npm run twitch\" \"npm run generate\""
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.18",
@@ -22,6 +25,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
     "autoprefixer": "^10.4.24",
+    "concurrently": "^9.2.1",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
