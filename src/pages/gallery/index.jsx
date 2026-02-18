@@ -23,12 +23,13 @@ function GalleryHome() {
             <NavUpperBar />
             <Sidebar />
 
-            <main className="relative w-screen h-[calc(100vh-7rem)] overflow-auto flex flex-wrap content-start justify-around pt-4 px-1.5">
-
-                <Categorie to="/gallery/pixelarts" src="public/media/pixelarts/NICK POMNI PNG.png" name="pixel arts" />
-                <Categorie to="/gallery/edits" src="public/media/pixelarts/NICK POMNI PNG.png" name="edits" />
-                <Categorie to="/gallery/dance" src="public/media/pixelarts/NICK POMNI PNG.png" name="dance" />
-                <Categorie to="/gallery/photos" src="public/media/pixelarts/NICK POMNI PNG.png" name="photos" />
+            <main className="relative w-screen h-[calc(100vh-7rem)] overflow-auto">
+                <div className="flex flex-wrap content-start justify-around pt-4 px-1.5">
+                    <Categorie to="/gallery/pixelarts" src="/src/assets/images/pixelart_thumbnail.png" name="pixel arts" />
+                    <Categorie to="/gallery/edits" src="/src/assets/images/edits-thumbnail.png" name="edits" />
+                    <Categorie to="/gallery/dance" src="/src/assets/images/dance-thumbnail.png" name="dance" />
+                    <Categorie to="/gallery/photos" src="/src/assets/images/photos_thumbnail.png" name="photos" />
+                </div>
 
             </main>
         </Screen>

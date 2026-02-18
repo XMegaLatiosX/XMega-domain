@@ -16,9 +16,14 @@ function toggle_modal(src) {
 }
 
 function Media_element({ name, src, category }) {
+    const components = {
+        "mp4": <video src={src} className="rounded-sm"></video>
+    }
     return (
         <a className="relative flex items-start mb-1" onClick={() => {toggle_modal(`${category}/${name}`)}}>
-            <img src={src} className="rounded-sm" />
+            {
+                components[name.split('.')[1]] || <img src={src} className="rounded-sm" />
+            }
             <div className="absolute flex items-center justify-center top-0 right-0 p-0.5">
                 <h2 className="text-sm text-cyan-500 opacity-45"> {name.split('.')[0]} </h2>
             </div>
@@ -28,7 +33,7 @@ function Media_element({ name, src, category }) {
 function Modal({ display, media, category, func }) {
     const path = '/media/' + category + '/'+media
     return (
-        <div style={{display: display}} className="fixed bottom-0 w-screen h-[calc(100vh-7rem)] overflow-auto flex justify-around items-center mb-8" id="modal_bg">
+        <div style={{display: display}} className="fixed bottom-1/6 w-screen h-[calc(100vh-7rem)] overflow-auto flex justify-around items-center mb-8" id="modal_bg">
             <div className="w-full h-full" onClick={() => {toggle_modal(`${category}/`)}}></div>
             <div  className="absolute z-50 flex flex-col items-center justify-center max-w-[90%]" id="modal_div">
                 <div className="relative flex items-center justify-center grow">

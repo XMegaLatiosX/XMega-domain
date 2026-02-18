@@ -17,7 +17,7 @@ function generateGallery() {
 
     const files = fs.readdirSync(categoryPath, { withFileTypes: true })
       .filter(file => file.isFile())
-      .filter(file => /\.(png|jpg|jpeg|webp|gif)$/i.test(file.name));
+      .filter(file => /\.(png|jpg|jpeg|webp|gif|mp4)$/i.test(file.name));
 
     files.forEach(file => {
       const fullPath = path.join(categoryPath, file.name);
