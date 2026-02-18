@@ -6,6 +6,7 @@ import GalleryHome from './pages/gallery'
 import Gallery from './pages/gallery/galleries'
 import Blog from './pages/blog'
 import Blog_post from './pages/blog/post'
+import Modal from './components/modal'
 
 function App() {
 
@@ -17,8 +18,9 @@ function App() {
             <Route path="/blog" element={<Blog/>} />
             <Route path="/blog/:post_name" element={<Blog_post/>} />
             <Route path="/gallery" element={<GalleryHome/>} />
-            <Route path="/gallery/:category" element={<Gallery/>} />
-            <Route path="/gallery/:category/:media_name" element={<Gallery/>} />
+            <Route path="/gallery/:category" element={<Gallery/>}>
+                <Route path=":media_name" element={<Modal/>} />
+            </Route>
             <Route path="*" element={<Notfound/>} />
         </Routes>
     </BrowserRouter>
