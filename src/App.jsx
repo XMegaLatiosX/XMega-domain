@@ -4,6 +4,8 @@ import About from './pages/about'
 import Notfound from './pages/404'
 import GalleryHome from './pages/gallery'
 import Gallery from './pages/gallery/galleries'
+import Blog from './pages/blog'
+import Blog_post from './pages/blog/post'
 
 function App() {
 
@@ -12,6 +14,8 @@ function App() {
         <Routes>
             <Route path="/" element={<Home/>} />
             <Route path="/about" element={<About/>} />
+            <Route path="/blog" element={<Blog/>} />
+            <Route path="/blog/:post_name" element={<Blog_post/>} />
             <Route path="/gallery" element={<GalleryHome/>} />
             <Route path="/gallery/:category" element={<Gallery/>} />
             <Route path="/gallery/:category/:media_name" element={<Gallery/>} />
