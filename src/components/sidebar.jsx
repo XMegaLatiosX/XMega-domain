@@ -11,8 +11,8 @@ function Sidebar() {
             
             <Link className="sidebar_topic" to="/settings"> <span className="sidebar_topic_text">Settings</span> </Link>
             {/* <div className="sidebar_topic"> <span className="sidebar_topic_text" href="">Support me develop</span> </div> SEM PEDIR ESMOLA POR ENQUANTO */}
-            <a className="sidebar_topic" target="_blank" href="https://docs.google.com/forms/d/e/1FAIpQLSfZDQMxMEjC9BdKI-uSBisRYu-w1N3wKu9aZirxOFS0li5Q3g/viewform?usp=publish-editor"> <span className="sidebar_topic_text">send your feedback!</span> </a>
-            <a className="sidebar_topic" target="_blank" href="https://docs.google.com/forms/d/e/1FAIpQLSfZDQMxMEjC9BdKI-uSBisRYu-w1N3wKu9aZirxOFS0li5Q3g/viewform?usp=publish-editor"> <span className="sidebar_topic_text">report a bug</span> </a>
+            <Link className="sidebar_topic" to="/feedback"> <span className="sidebar_topic_text">send your feedback!</span> </Link>
+            <Link className="sidebar_topic" to="/feedback"> <span className="sidebar_topic_text">report a bug</span> </Link>
             
             <Link className="sidebar_topic" to="/404"> <span className="sidebar_topic_text">404</span> </Link>
             
