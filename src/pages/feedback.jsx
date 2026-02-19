@@ -19,7 +19,7 @@ function Feedback() {
 
             </main>
         </Screen>
-//feature/embed-feedback-and-report-page
+
     )
 }
 export default Feedback

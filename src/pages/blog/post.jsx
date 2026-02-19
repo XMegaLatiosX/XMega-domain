@@ -8,7 +8,6 @@ import posts from "/src/data/blog_posts.json"
 function Blog_post() {
     const { post_name } = useParams()
     const current_post = posts.find(post => (post.name == post_name));
-    console.log(current_post.thumbnail)
     // if(!current_post) Navigate({to:"/404"})
     return (
         <Screen>
