@@ -9,6 +9,7 @@ import Blog_post from './pages/blog/post'
 import Modal from './components/modal'
 import Progress from './pages/progress'
 import Settings from './pages/settings'
+import Programming from './pages/programming'
 
 function App() {
 
@@ -24,6 +25,7 @@ function App() {
                 <Route path=":media_name" element={<Modal/>} />
             </Route>
             <Route path="/progress" element={<Progress/>} />
+            <Route path="/programming" element={<Programming/>} />
             <Route path="/settings" element={<Settings/>} />
             <Route path="*" element={<Notfound/>} />
         </Routes>
