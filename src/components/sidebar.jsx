@@ -3,7 +3,7 @@ import { Link } from "react-router-dom"
 function Sidebar() {
     return (
         <aside id="sidebar_div" className="sidebar_div">
-            <a className="sidebar_topic" href="https://discord.gg/KJ398CH2Th"> <span className="sidebar_topic_text">Join our discord!</span> </a>
+            <a className="sidebar_topic" href="https://discord.gg/KJ398CH2Th" target="_blank"> <span className="sidebar_topic_text">Join our discord!</span> </a>
             
             <Link className="sidebar_topic" to="/blog/"> <span className="sidebar_topic_text">What is new?</span> </Link>
             <Link className="sidebar_topic" to="/progress"> <span className="sidebar_topic_text">Progress</span> </Link>
