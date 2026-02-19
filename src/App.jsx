@@ -7,6 +7,7 @@ import Gallery from './pages/gallery/galleries'
 import Blog from './pages/blog'
 import Blog_post from './pages/blog/post'
 import Modal from './components/modal'
+import Progress from './pages/progress'
 
 function App() {
 
@@ -21,6 +22,7 @@ function App() {
             <Route path="/gallery/:category" element={<Gallery/>}>
                 <Route path=":media_name" element={<Modal/>} />
             </Route>
+            <Route path="/progress" element={<Progress/>} />
             <Route path="*" element={<Notfound/>} />
         </Routes>
     </BrowserRouter>
