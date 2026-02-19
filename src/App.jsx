@@ -10,6 +10,7 @@ import Modal from './components/modal'
 import Progress from './pages/progress'
 import Settings from './pages/settings'
 import Programming from './pages/programming'
+import Feedback from './pages/feedback'
 
 function App() {
 
@@ -27,6 +28,7 @@ function App() {
             <Route path="/progress" element={<Progress/>} />
             <Route path="/programming" element={<Programming/>} />
             <Route path="/settings" element={<Settings/>} />
+            <Route path="/feedback" element={<Feedback/>} />
             <Route path="*" element={<Notfound/>} />
         </Routes>
     </BrowserRouter>
