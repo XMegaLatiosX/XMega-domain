@@ -5,7 +5,6 @@ import Sidebar from "../components/sidebar"
 import goals from "/src/data/goals.json"
 
 function Progress() {
-    console.log(goals)
     return (
         <Screen>
             <Header/>

@@ -4,16 +4,16 @@
         "icon": "/src/assets/images/star_icon.png",
         "thumbnail": "/src/assets/images/reference.png",
         "title": "1 post",
-        "name": "oi blog",
+        "name": "eyo, new posts page",
         "summary": "Blog created, now i can use my time on other things, thi summary is just an fancy lorem ypisum if you ask me, this means that nothing written here is actually relevant in any means, fuck you my nigga",
         "date": "2026-02-17T21:04:18.179Z",
-        "call_to_action": "confira o blog!",
+        "call_to_action": "checkout this post!",
 
         "content": [
             {
                 "id": 1,
                 "type": "text",
-                "value": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin vel facilisis libero. Aenean id nisl felis. Curabitur dui neque, dictum vel tellus ac, elementum accumsan quam. In dapibus, lectus vitae fringilla faucibus, risus mauris sagittis urna, eu mollis risus libero sit amet augue. Duis facilisis dolor et felis placerat, non fringilla odio lobortis. Nullam feugiat cursus consectetur. Donec eget quam eleifend, tempus tellus eu, porttitor urna.Nam at lorem dapibus nisl gravida volutpat sed in libero. Sed nec risus vel massa sagittis hendrerit. Vestibulum suscipit odio tortor, a pellentesque arcu interdum at. Nam malesuada congue lacus quis vulputate. Fusce lectus leo, iaculis a arcu quis, luctus cursus ipsum. Praesent a risus facilisis, vulputate nulla quis, aliquam ante. Mauris urna ex, fermentum et sem id, feugiat cursus ante. Interdum et malesuada fames ac ante ipsum primis in faucibus. Integer nec quam id eros consectetur porttitor ut at dolor. Cras tristique convallis auctor. Curabitur gravida commodo elit non luctus. Morbi mollis, risus id interdum vulputate, felis sapien commodo ante, nec dignissim nisi lectus a felis. Mauris pharetra enim at tortor vulputate, nec dapibus leo tincidunt. Nunc eget mauris est.Aliquam egestas nisl ac enim cursus, semper ullamcorper dolor venenatis. Etiam convallis dolor non tempor fermentum. Mauris eget interdum magna, ut aliquet leo. Phasellus at dui nec turpis posuere interdum. Nullam ut libero id felis placerat posuere. Nulla id vestibulum quam. Suspendisse velit nulla, congue eget elementum eu, cursus nec mi. Maecenas vel massa id nulla gravida vestibulum. Nulla pharetra pellentesque ante, at porta dui auctor eget. Donec sit amet sollicitudin magna, lobortis venenatis urna. Fusce auctor feugiat tortor, sed blandit felis molestie ut. Suspendisse aliquet velit et erat pretium eleifend."
+                "value": "I added this new posts pages when you click one of the posts in the blog, blob, now BEHOLD the place holder!:"
             },
             {
                 "id": 2,
@@ -24,10 +24,10 @@
     },
     {
         "id": 2,
-        "icon": "/src/assets/images/star_icon.png",
+        "icon": "/src/assets/images/star_icon.png",        
         "thumbnail": "/src/assets/images/reference.png",
         "title": "2° post",
-        "name": "testando o blog",
+        "name": "testing the bog",
         "summary": "Blog created already, now i can use my time on other things, thi summary is just an fancy lorem ypisum if you ask me, this means that nothing written here is actually relevant in any means, fuck you my nigga",
         "date": "2026-02-17T21:04:18.179Z",
         "call_to_action": "confira o blog!",
@@ -41,7 +41,7 @@
             {
                 "id": 2,
                 "type": "text",
-                "value": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin vel facilisis libero. Aenean id nisl felis. Curabitur dui neque, dictum vel tellus ac, elementum accumsan quam. In dapibus, lectus vitae fringilla faucibus, risus mauris sagittis urna, eu mollis risus libero sit amet augue. Duis facilisis dolor et felis placerat, non fringilla odio lobortis. Nullam feugiat cursus consectetur. Donec eget quam eleifend, tempus tellus eu, porttitor urna.Nam at lorem dapibus nisl gravida volutpat sed in libero. Sed nec risus vel massa sagittis hendrerit. Vestibulum suscipit odio tortor, a pellentesque arcu interdum at. Nam malesuada congue lacus quis vulputate. Fusce lectus leo, iaculis a arcu quis, luctus cursus ipsum. Praesent a risus facilisis, vulputate nulla quis, aliquam ante. Mauris urna ex, fermentum et sem id, feugiat cursus ante. Interdum et malesuada fames ac ante ipsum primis in faucibus. Integer nec quam id eros consectetur porttitor ut at dolor. Cras tristique convallis auctor. Curabitur gravida commodo elit non luctus. Morbi mollis, risus id interdum vulputate, felis sapien commodo ante, nec dignissim nisi lectus a felis. Mauris pharetra enim at tortor vulputate, nec dapibus leo tincidunt. Nunc eget mauris est.Aliquam egestas nisl ac enim cursus, semper ullamcorper dolor venenatis. Etiam convallis dolor non tempor fermentum. Mauris eget interdum magna, ut aliquet leo. Phasellus at dui nec turpis posuere interdum. Nullam ut libero id felis placerat posuere. Nulla id vestibulum quam. Suspendisse velit nulla, congue eget elementum eu, cursus nec mi. Maecenas vel massa id nulla gravida vestibulum. Nulla pharetra pellentesque ante, at porta dui auctor eget. Donec sit amet sollicitudin magna, lobortis venenatis urna. Fusce auctor feugiat tortor, sed blandit felis molestie ut. Suspendisse aliquet velit et erat pretium eleifend."
+                "value": "wassup, blog page added."
             }
         ]
     }
