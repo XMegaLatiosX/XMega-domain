@@ -27,8 +27,8 @@ function Modal() {
 
     return (
         <div className="fixed bottom-1/6 w-screen h-[calc(100vh-7rem)] overflow-auto flex justify-around items-center mb-8" id="modal_bg">
-            <div className="w-full h-full" onClick={() => navigate(`/gallery/${category}`)}></div>
-            <div  className="absolute z-50 flex flex-col items-center justify-center max-w-[90%]" id="modal_div">
+            <div className="fixed w-full h-screen" onClick={() => navigate(`/gallery/${category}`)}></div>
+            <div  className="fixed z-50 flex flex-col items-center justify-center max-w-[90%]" id="modal_div">
                 <div className="relative flex items-center justify-center grow">
                     <a onClick={() => change_modal(-1)} className="fixed z-30 rounded-full bg-[rgba(53,31,61,0.75)] w-12 h-12 left-2 sm:left-2/12 flex justify-center  pl-2 items-center"><i className="arrow select-none w-6 h-6 rotate-135"></i></a>
                     {components[current_post.path.split('.')[1]]}
