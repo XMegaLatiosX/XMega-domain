@@ -15,7 +15,7 @@ function NavUpperBar() {
         <div className="UpperBar bg-gray-900 w-full h-12 flex justify-around overflow-scroll">
             <UpperBarButton to="/about" label="about"></UpperBarButton>
             <UpperBarButton to="/blog" label="blog"></UpperBarButton>
-            <UpperBarButton to="/music" label="music"></UpperBarButton>
+            {/* <UpperBarButton to="/music" label="music"></UpperBarButton> dont know what to put here yet... */}
             <UpperBarButton to="/gallery" label="gallery"></UpperBarButton>
             <UpperBarButton to="/programming" label="programming"></UpperBarButton>
             <UpperBarButton to="/progress" label="progress"></UpperBarButton>
