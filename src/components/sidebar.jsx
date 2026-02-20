@@ -1,4 +1,7 @@
 import { Link } from "react-router-dom"
+import github_icon from "../assets/images/github.png"
+import discord_icon from "../assets/images/discord.png"
+import instagram_icon from "../assets/images/instagram.png"
 
 function Sidebar() {
     return (
@@ -17,9 +20,9 @@ function Sidebar() {
             <Link className="sidebar_topic" to="/404"> <span className="sidebar_topic_text">404</span> </Link>
             
             <div className="flex gap-2 pl-2 h-12 items-center">
-                <a href="https://github.com/XMegaLatiosX" target="_blank">          <img className="h-8" src="/src/assets/images/github.png"/></a>
-                <a href="https://discord.gg/KJ398CH2Th" target="_blank">            <img className="h-8" src="/src/assets/images/discord.png"/></a>
-                <a href="https://www.instagram.com/xmega_latiosx/#" target="_blank"> <img className="h-8" src="/src/assets/images/instagram.png"/></a>
+                <a href="https://github.com/XMegaLatiosX" target="_blank">          <img className="h-8" src={github_icon}/></a>
+                <a href="https://discord.gg/KJ398CH2Th" target="_blank">            <img className="h-8" src={discord_icon}/></a>
+                <a href="https://www.instagram.com/xmega_latiosx/#" target="_blank"> <img className="h-8" src={instagram_icon}/></a>
             </div>
 
             {/* <iframe src="https://docs.google.com/forms/d/e/1FAIpQLSfZDQMxMEjC9BdKI-uSBisRYu-w1N3wKu9aZirxOFS0li5Q3g/viewform?usp=publish-editor" className="w-lg h-140"></iframe> GOOGLE FORM EMBED*/}

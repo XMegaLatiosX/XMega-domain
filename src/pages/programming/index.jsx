@@ -15,9 +15,9 @@ function Programming() {
                     <div className=" min-h-[70vh] py-6 px-4 bg-gray-900 rounded-xl grow shadow-cyan-900 shadow justify-items-center" >
                         <h2 className="font-bold text-cyan-600 text-3xl">Thats all for now xd</h2>
                         <br />
-                        <h2 className="font-bold text-cyan-600 text-3xl">go on config and set speed to 10, its way better</h2>
+                        <h2 className="font-bold text-cyan-600 text-3xl">p1: W A S D - SPACE <br/> p2: ↑ ↓ ← → - ENTER</h2>
 
-                    <iframe src="https://xmegalatiosx.github.io/Snake-Game-by-Xmega/" className="w-screen h-screen"></iframe>
+                    <iframe src="https://xmegalatiosx.github.io/1v1-Fighting-game/" className="w-screen h-screen"></iframe>
                     {/* coloca o embed de todos os seus projetos em escala menor se possivel, e faz igual na galeria q vc pode clicar an seta e mudar pros lados
                      cada jogo com um titulo e uma descrição tipo "joga com velocidade 10" ou "WASD e setas pra andar/atacar" */}
 

@@ -3,6 +3,10 @@ import Screen from "../../components/Screen"
 import Header from "../../components/header"
 import NavUpperBar from "../../components/navupperbar"
 import Sidebar from "../../components/sidebar"
+import pixelart_thumbnail from "../../assets/images/pixelart_thumbnail.png"
+import edits_thumbnail from "../../assets/images/edits-thumbnail.png"
+import dance_thumbnail from "../../assets/images/dance-thumbnail.png"
+import photos_thumbnail from "../../assets/images/photos_thumbnail.png"
 
 function Categorie({ name, src, to }) {
     return (
@@ -25,10 +29,10 @@ function GalleryHome() {
 
             <main className="relative w-screen h-[calc(100vh-7rem)] overflow-auto">
                 <div className="flex flex-wrap content-start justify-around pt-4 px-1.5">
-                    <Categorie to="/gallery/pixelarts" src="/src/assets/images/pixelart_thumbnail.png" name="pixel arts" />
-                    <Categorie to="/gallery/edits" src="/src/assets/images/edits-thumbnail.png" name="edits" />
-                    <Categorie to="/gallery/dances" src="/src/assets/images/dance-thumbnail.png" name="dance" />
-                    <Categorie to="/gallery/photos" src="/src/assets/images/photos_thumbnail.png" name="photos" />
+                    <Categorie to="/gallery/pixelarts" src={pixelart_thumbnail} name="pixel arts" />
+                    <Categorie to="/gallery/edits" src={edits_thumbnail} name="edits" />
+                    <Categorie to="/gallery/dances" src={dance_thumbnail} name="dance" />
+                    <Categorie to="/gallery/photos" src={photos_thumbnail} name="photos" />
                 </div>
 
             </main>

@@ -2,6 +2,7 @@ import Screen from '../components/Screen'
 import Header from '../components/header' 
 import NavUpperBar from '../components/navupperbar'
 import Sidebar from '../components/sidebar'
+import star_icon from "../assets/images/star_icon.png"
 
 export default function Home() {
     return (
@@ -14,7 +15,7 @@ export default function Home() {
                 <div className="flex w-full absolute top-[calc(50vh-7rem)] -translate-y-1/2 items-center justify-center">
                     
                     <h1 className="absolute text-[3.5rem] font-bold outline-indigo-400 ">XMegaLatiosX</h1>
-                    <img src="src\assets\images\star_icon.png" className="pixel-art w-7/12"/>
+                    <img src={star_icon} className="pixel-art w-7/12"/>
                     
                 </div>
                 

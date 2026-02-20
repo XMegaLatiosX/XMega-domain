@@ -2,6 +2,7 @@ import Screen from "../components/Screen"
 import Header from "../components/header"
 import NavUpperBar from "../components/navupperbar"
 import Sidebar from "../components/sidebar"
+import optimus_balling from "../assets/images/optimus-balling.gif"
 
 function Settings() {
     
@@ -21,7 +22,7 @@ function Settings() {
                                 <span className="font-medium ">be happy</span>
                             </div>
                             <div  className="w-full justify-center">
-                                <img className="max-h-50" src="/src/assets/images/optimus-balling.gif"></img>
+                                <img className="max-h-50" src={optimus_balling}></img>
                             </div>
                         </div>
                     </div>
