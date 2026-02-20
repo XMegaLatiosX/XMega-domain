@@ -19,7 +19,7 @@ function Programming() {
 
                     <iframe src="https://xmegalatiosx.github.io/1v1-Fighting-game/" className="w-screen h-screen"></iframe>
                     {/* coloca o embed de todos os seus projetos em escala menor se possivel, e faz igual na galeria q vc pode clicar an seta e mudar pros lados
-                     cada jogo com um titulo e uma descrição tipo "joga com velocidade 10" ou "WASD e setas pra andar/atacar" */}
+                     cada jogo com um titulo e uma descrição tipo "joga com velocidade 10" ou "WASD e setas pra andar/atacar"*/}
 
                     </div>
                 </div>
