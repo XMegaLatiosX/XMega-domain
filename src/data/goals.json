@@ -1,0 +1,16 @@
+[
+    {
+        "name": "Finish this site",
+        "description": "Complete every first goal to this site for now",
+        "date": "2026-02-18",
+        "deadline": "2026-03-31",
+        "percentage": "15"
+    },
+    {
+        "name": "Set up the discord server",
+        "description": "Finish making a good quality server",
+        "date": "2026-03-05",
+        "deadline": "2026-03-12",
+        "percentage": "0"
+    }
+]

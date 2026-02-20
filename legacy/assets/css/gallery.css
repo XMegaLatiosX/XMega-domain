@@ -1,0 +1,14 @@
+.folder {
+    @apply bg-gray-800 w-36 h-36 mb-2 rounded-md hover:border-2 hover:border-cyan-900;
+}
+
+.folder_thumbnail {
+    @apply w-full h-24 rounded-md;
+}
+
+.folder_description_div {
+    @apply flex h-12 items-center justify-center;
+}
+.folder_title {
+    @apply text-cyan-600 text-xl font-bold;
+}

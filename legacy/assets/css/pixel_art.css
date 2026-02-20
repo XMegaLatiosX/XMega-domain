@@ -1,0 +1,14 @@
+.pixel_art_div {
+    @apply bg-gray-800 w-36 h-36 mb-2 rounded-md hover:border-2 hover:border-cyan-900;
+}
+
+.pixel_art {
+    @apply w-full h-24 rounded-md;
+}
+
+.pixel_art_description_div {
+    @apply flex h-12 items-center justify-center;
+}
+.pixel_art_title {
+    @apply text-cyan-600 text-xl font-bold;
+}

@@ -1,0 +1,48 @@
+[
+    {
+        "id": 1,
+        "icon": "/src/assets/images/star_icon.png",
+        "thumbnail": "/src/assets/images/reference.png",
+        "title": "1 post",
+        "name": "eyo, new posts page",
+        "summary": "Blog created, now i can use my time on other things, thi summary is just an fancy lorem ypisum if you ask me, this means that nothing written here is actually relevant in any means, fuck you my nigga",
+        "date": "2026-02-17T21:04:18.179Z",
+        "call_to_action": "checkout this post!",
+
+        "content": [
+            {
+                "id": 1,
+                "type": "text",
+                "value": "I added this new posts pages when you click one of the posts in the blog, blob, now BEHOLD the place holder!:"
+            },
+            {
+                "id": 2,
+                "type": "img",
+                "value": "/src/assets/images/reference.png"
+            }
+        ]
+    },
+    {
+        "id": 2,
+        "icon": "/src/assets/images/star_icon.png",        
+        "thumbnail": "/src/assets/images/reference.png",
+        "title": "2° post",
+        "name": "testing the bog",
+        "summary": "Blog created already, now i can use my time on other things, thi summary is just an fancy lorem ypisum if you ask me, this means that nothing written here is actually relevant in any means, fuck you my nigga",
+        "date": "2026-02-17T21:04:18.179Z",
+        "call_to_action": "checkout!",
+
+        "content": [
+            {
+                "id": 1,
+                "type": "img",
+                "value": "src/assets/images/reference.png"
+            },
+            {
+                "id": 2,
+                "type": "text",
+                "value": "wassup, blog page added."
+            }
+        ]
+    }
+]
