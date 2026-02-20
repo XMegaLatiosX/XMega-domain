@@ -17,7 +17,7 @@ function Programming() {
                         <br />
                         <h2 className="font-bold text-cyan-600 text-3xl">p1: W A S D - SPACE <br/> p2: ↑ ↓ ← → - ENTER</h2>
 
-                    <iframe src="https://xmegalatiosx.github.io/1v1-Fighting-game/" className="w-screen h-screen"></iframe>
+                        <iframe src="https://xmegalatiosx.github.io/1v1-Fighting-game/"></iframe>
                     {/* coloca o embed de todos os seus projetos em escala menor se possivel, e faz igual na galeria q vc pode clicar an seta e mudar pros lados
                      cada jogo com um titulo e uma descrição tipo "joga com velocidade 10" ou "WASD e setas pra andar/atacar"*/}
 
