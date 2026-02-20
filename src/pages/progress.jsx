@@ -1,6 +1,6 @@
 import Header from "../components/header"
 import NavUpperBar from "../components/navupperbar"
-import Screen from "../components/Screen"
+import Screen from "../components/screen"
 import Sidebar from "../components/sidebar"
 import goals from "/src/data/goals.json"
 

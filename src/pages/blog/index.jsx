@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom"
 import Header from "../../components/header"
 import NavUpperBar from "../../components/navupperbar"
-import Screen from "../../components/Screen"
+import Screen from "../../components/screen"
 import Sidebar from "../../components/sidebar"
 import posts from "/src/data/blog_posts.json"
 

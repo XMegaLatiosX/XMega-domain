@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom"
-import Screen from "../../components/Screen"
+import Screen from "../../components/screen"
 import Header from "../../components/header"
 import NavUpperBar from "../../components/navupperbar"
 import Sidebar from "../../components/sidebar"
