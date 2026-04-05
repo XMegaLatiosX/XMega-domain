@@ -30,10 +30,10 @@ function Header() {
         return () => clearInterval(interval)
     }, [])
     return (
-        <header className="relative top-0 w-screen h-16 bg-black flex justify-between items-center pl-2">
-            <div className="h-full flex justify-between space-x-1 items-center pl-4 gap-2">
+        <header className="relative top-0 w-screen h-16 bg-black flex justify-between items-center">
+            <div className="h-full flex justify-between space-x-1 items-center pl-2 gap-2">
                 <a className="border-none" onClick={toggle_side_bar}>
-                    <img className="rounded-4xl h-10 w-10" src={side_bar_icon} />
+                    <img className="pixel-art h-10 w-10" src={side_bar_icon} />
                 </a>
                 <Link to="/" className="h-full flex items-center justify-center">
                     <img className="absolute h-7/12" src={star_icon} />

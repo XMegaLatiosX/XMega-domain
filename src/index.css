@@ -1,11 +1,26 @@
 @import "tailwindcss";
 
 
+@font-face {
+  font-family: 'Pixel_font';
+  src: url('/fonts/ITGridbitDemo-Regular.otf') format('opentype');
+}
+
 .arrow {
   border: solid rgba(0, 255, 255, 1);
   border-width: 0 .5rem .5rem 0;
   display: inline-block;
   padding: 3px;
+}
+
+.main-logo {
+  @apply absolute text-[2.5rem] font-bold text-[#00ffff] sm:text-[10vw]  sm:-translate-y-4;
+  -webkit-text-stroke: 8px  black;
+  @media (min-width: 640px) {
+    -webkit-text-stroke: 16px  black;
+  }
+  paint-order: stroke fill;
+  font-family: 'Pixel_font', sans-serif;
 }
 
 .main-video {

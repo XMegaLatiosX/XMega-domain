@@ -12,10 +12,10 @@ export default function Home() {
             <Sidebar></Sidebar>
             <main className="relative w-screen h-[calc(100vh-7rem)] overflow-hidden">
                 
-                <div className="flex w-full absolute top-[calc(50vh-7rem)] -translate-y-1/2 items-center justify-center">
+                <div className="flex w-full absolute top-[calc(50vh-10rem)] sm:top-[calc(50vh-4rem)] -translate-y-1/2 items-center justify-center">
                     
-                    <h1 className="absolute text-[3.5rem] font-bold outline-indigo-400 ">XMegaLatiosX</h1>
-                    <img src={star_icon} className="pixel-art w-7/12"/>
+                    <img src={star_icon} className="pixel-art w-1/2 sm:w-1/3 translate-y-2"/>
+                    <h1 className="main-logo">XMega LatiosX</h1>
                     
                 </div>
                 

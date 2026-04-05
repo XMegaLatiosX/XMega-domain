@@ -10,7 +10,7 @@ import photos_thumbnail from "../../assets/images/photos_thumbnail.png"
 
 function Categorie({ name, src, to }) {
     return (
-        <Link className="folder" to={to}>
+        <Link className="w-5/6 sm:w-1/3 mx-2" to={to}>
             <img src={src} className="folder_thumbnail" />
             <div className="folder_description_div">
                 <h2 className="folder_title"> {name} </h2>
