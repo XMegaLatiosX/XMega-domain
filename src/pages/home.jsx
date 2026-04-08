@@ -4,6 +4,8 @@ import NavUpperBar from '../components/navupperbar'
 import Sidebar from '../components/sidebar'
 import star_icon from "../assets/images/star_icon.png"
 
+import { supabase } from '../lib/supabase'
+
 export default function Home() {
     return (
         <Screen>
@@ -26,3 +28,13 @@ export default function Home() {
         </Screen>
     )
 }
+
+async function testConnection() {
+    const { data, error } = await supabase.from('blog_posts').select('*')
+    if (error) {
+        console.error("ERRO: ", error)
+    } else {
+        console.log("sucesso!: ", data)
+    }
+}
+testConnection()

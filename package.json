@@ -14,6 +14,7 @@
     "dev:full": "concurrently \"npm run dev:host\" \"npm run twitch\" \"npm run generate\""
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.102.1",
     "@tailwindcss/vite": "^4.1.18",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
