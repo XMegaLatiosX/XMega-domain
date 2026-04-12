@@ -1,13 +1,43 @@
-import { Navigate, replace, useParams } from "react-router-dom"
+import { Navigate, useParams } from "react-router-dom"
 import Header from "../../components/header"
 import NavUpperBar from "../../components/navupperbar"
 import Screen from "../../components/screen"
 import Sidebar from "../../components/sidebar"
-import posts from "/src/data/blog_posts.json"
+
+
+import { useEffect, useState } from "react"
+import { supabase } from "../../lib/supabase"
 
 function Blog_post() {
-    const { post_name } = useParams()
-    const current_post = posts.find(post => (post.name == post_name));
+    const { slug } = useParams()
+    const [post, setPost] = useState(null)
+    const [loading, setLoading] = useState(true)
+    
+    
+    useEffect(() => {
+        if (!slug) return <Navigate to="/404"/>
+
+        async function fetchPost() {
+            const { data, error } = await supabase
+            .from("blog_posts")
+            .select("*")
+            .eq("slug", slug)
+            .single()
+
+            if (error) {
+                console.error(error)
+                setLoading(false)
+                return
+            }
+
+            setPost(data)
+            setLoading(false)
+        }
+        fetchPost()
+    }, [slug])
+    if (loading) return <span>Loading...</span>
+    if (!post) return <Navigate to="/404"/>
+
     // if(!current_post) Navigate({to:"/404"})
     return (
         <Screen>
@@ -17,28 +47,27 @@ function Blog_post() {
             <main className="w-screen h-[calc(100vh-7rem)] overflow-auto pt-2">
                 <div className="w-full flex justify-center py-8">
                     <div className="bg-gray-900 py-4 px-[2%] max-w-200 flex-col flex items-center">
-                        <h1 className="text-white text-md w-3/4 text-center">{current_post.name}</h1>
+                        <h1 className="text-white text-md w-3/4 text-center">{post.slug}</h1>
                         <div className="flex h-8 items-center justify-center gap-2 mt-4 mb-2">
-                            <img className="h-8" src={current_post.icon}></img>
-                            <h2 className="font-mono font-bold italic text-sm">#{current_post.title}</h2>
+                            <img className="h-8" src={post.icon || "/media/images/star_icon.png"}></img>
+                            <h2 className="font-mono font-bold italic text-sm">#{post.title}</h2>
                             <span className="text-md"> — </span>
-                            <span className="text-sm">{current_post.date.split('T')[0]}</span>
+                            <span className="text-sm">{post.created_at ? post.created_at.split('T')[0] : ""}</span>
                         </div>
-                        {
-                        current_post.thumbnail != "" ? <img src={current_post.thumbnail}></img> : null}
-                        {
-                        current_post.content.map(module => {
-                            const components = {
-                                "break": <hr className="w-full h-1 mt-4 mb-8 text-gray-600"></hr>,
-                                "text": <p className="text-center font-bold" key={module.id}>{module.value}</p>,
-                                "img": <img key={module.id} src={module.value}></img>,
-                                "video": <video src={module.value}></video>
+                        {post.thumbnail && (<img src={post.thumbnail}></img>)}
 
-                            }
-                            return components[module.type] || null
-                        })
+                        {
+                            post.content.map(module => {
+                                const components = {
+                                    "break": <hr className="w-full h-1 mt-4 mb-8 text-gray-600"></hr>,
+                                    "text": <p className="text-center font-bold" key={module.id || index}>{module.value}</p>,
+                                    "img": <img key={module.id} src={module.value}></img>,
+                                    "video": <video src={module.value} controls></video>
+
+                                }
+                                return components[module.type] || null
+                            })
                         }
-                        {current_post.call_to_action != "" ? <button className="min-w-2/4 max-w-100 mt-8">{current_post.call_to_action}</button> : null}
                         <hr className="w-full h-1 mt-4 mb-8 text-gray-600"></hr>
                     </div>
 

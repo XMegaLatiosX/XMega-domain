@@ -21,7 +21,6 @@ export default function Home() {
                     
                 </div>
                 
-                
                 <div id="twitch_embed">
                 </div>
             </main>

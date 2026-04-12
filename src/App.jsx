@@ -11,6 +11,7 @@ import Progress from './pages/progress'
 import Settings from './pages/settings'
 import Programming from './pages/programming'
 import Feedback from './pages/feedback'
+import CreatePost from './pages/blog/create-post'
 
 function App() {
 
@@ -20,7 +21,8 @@ function App() {
             <Route path="/" element={<Home/>} />
             <Route path="/about" element={<About/>} />
             <Route path="/blog" element={<Blog/>} />
-            <Route path="/blog/:post_name" element={<Blog_post/>} />
+            <Route path="/blog/create-post" element={<CreatePost/>} />
+            <Route path="/blog/:slug" element={<Blog_post/>} />
             <Route path="/gallery" element={<GalleryHome/>} />
             <Route path="/gallery/:category" element={<Gallery/>}>
                 <Route path=":media_name" element={<Modal/>} />
