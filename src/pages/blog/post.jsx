@@ -38,7 +38,7 @@ function Blog_post() {
     if (loading) return <span>Loading...</span>
     if (!post) return <Navigate to="/404"/>
 
-    // if(!current_post) Navigate({to:"/404"})
+    
     return (
         <Screen>
             <Header/>
@@ -57,11 +57,11 @@ function Blog_post() {
                         {post.thumbnail && (<img src={post.thumbnail}></img>)}
 
                         {
-                            post.content.map(module => {
+                            post.content.map((module, index) => {
                                 const components = {
                                     "break": <hr className="w-full h-1 mt-4 mb-8 text-gray-600"></hr>,
-                                    "text": <p className="text-center font-bold" key={module.id || index}>{module.value}</p>,
-                                    "img": <img key={module.id} src={module.value}></img>,
+                                    "text": <p className="text-center font-bold" key={index}>{module.value}</p>,
+                                    "img": <img key={index} src={module.value}></img>,
                                     "video": <video src={module.value} controls></video>
 
                                 }

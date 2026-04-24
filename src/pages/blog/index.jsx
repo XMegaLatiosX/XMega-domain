@@ -13,9 +13,9 @@ import { supabase } from "../../lib/supabase"
 function Post({ icon, thumbnail, title, slug, summary, date, to}) {
     const clean_date = date ? date.split('T')[0] : ""
     return (
-        <Link to={to} className="max-w-200 flex flex-col border-y border-gray-700 px-2 pb-12 justify-center">
+        <Link to={to} className="max-w-200 w-full flex flex-col border-y border-gray-700 px-2 pb-12 justify-center">
             <div className="relative w-full h-14 items-center flex pl-2">
-                <img className="h-8" src={icon}></img>
+                <img className="h-8" src={icon || "/media/images/star_icon.png"}></img>
                 <div className="flex flex-row gap-2 px-2 h-full items-center">
                     <h3 className="font-mono font-bold italic text-md">#{slug}</h3>
                     <span className="text-md"> — </span>
@@ -31,8 +31,9 @@ function Post({ icon, thumbnail, title, slug, summary, date, to}) {
 
 
 function Blog() {
+    const [posts, set_posts] = useState([])
 
-    const [posts, setPosts] = useState([])
+    const [user, set_user] = useState(null)
     useEffect(() => {
         async function fetchPosts() {
             const { data, error } = await supabase
@@ -45,11 +46,28 @@ function Blog() {
                 return
             }
 
-            setPosts(data)
+            set_posts(data)
         }
-
         fetchPosts()
+        
+        const { data: listener } = supabase.auth.onAuthStateChange(
+            (event, session) => {
+                set_user(session?.user ?? null)
+            }
+        )
+
+        
+        return () => {listener.subscription.unsubscribe()}
     }, [])
+
+    useEffect(() => {
+        async function getUser() {
+            const { data } = await supabase.auth.getUser()
+            set_user(data.user)
+        }
+        getUser()
+    }, [])
+        
 
     return (
         <Screen>
@@ -73,7 +91,7 @@ function Blog() {
                         })
                     }
                 </div>
-                <Link to={(`/blog/create-post`)} > <button> SEEXO </button> </Link>
+                {user?.app_metadata?.is_admin? <Link className="fixed right-8 bottom-4" to={(`/blog/create-post`)} > <button className="w-12 h-12"> + </button> </Link>: null}
             </main>
         </Screen>
 

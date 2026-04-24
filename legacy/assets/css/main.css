@@ -46,7 +46,10 @@
     @apply text-xl font-bold text-gray-500;
 }
 
-
+@keyframes open-turn-visible {
+    from {max-height: 0px; filter: brightness(50%);}
+    to {max-height: 128px; filter: brightness(100%);}
+}
 
 @keyframes shake {
   0% { transform: translate(1px, 1px) rotate(0deg); }

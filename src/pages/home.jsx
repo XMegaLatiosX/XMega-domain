@@ -16,7 +16,7 @@ export default function Home() {
                 
                 <div className="flex w-full absolute top-[calc(50vh-10rem)] sm:top-[calc(50vh-4rem)] -translate-y-1/2 items-center justify-center">
                     
-                    <img src={star_icon} className="pixel-art w-1/2 sm:w-1/3 translate-y-2"/>
+                    <img src={star_icon} className="pixel-art w-1/2 sm:w-1/3 translate-y-2  select-none"/>
                     <h1 className="main-logo">XMega LatiosX</h1>
                     
                 </div>
