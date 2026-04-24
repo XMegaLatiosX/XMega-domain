@@ -3,7 +3,7 @@ import NavUpperBar from "../../components/navupperbar"
 import Screen from "../../components/screen"
 import Sidebar from "../../components/sidebar"
 
-import { Navigate } from "react-router-dom"
+import { Navigate, useNavigate } from "react-router-dom"
 import { useEffect, useRef, useState } from "react"
 import { supabase } from "../../lib/supabase"
 
@@ -49,7 +49,9 @@ function CreatePost() {
 
 
     const [content_list, set_content_list] = useState([])
-
+    
+    const navigate = useNavigate()
+    
     const [user, setUser] = useState(null)
     const [loading, setLoading] = useState(true)
     useEffect(() => {
@@ -180,6 +182,9 @@ function CreatePost() {
             return
         }
         console.log("Post criado!")
+
+        navigate("/blog")
+        return
     }
 
     function add_content_block() {
