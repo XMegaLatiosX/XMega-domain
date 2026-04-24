@@ -4,6 +4,8 @@ import NavUpperBar from "../../components/navupperbar"
 import Screen from "../../components/screen"
 import Sidebar from "../../components/sidebar"
 import medias from "../../data/medias.json"
+import { useEffect, useState } from "react"
+import { supabase } from "../../lib/supabase"
 
 
 
@@ -28,8 +30,20 @@ function Media_element({ name, src, category }) {
 
 function Gallery() {
     const { category } = useParams()
-    // if(!category) return <Navigate to="/404" replace/> REVER CONDIÇOES DE LOADING PRA CASO CATEGORIA NAO EXISTA OU IMAGEM NAO EXISTA
+    const [user, set_user] = useState(null)
+    useEffect(() => {
+        async function get_user() {
+            const { data } = await supabase.auth.getUser()
+            set_user(data.user)
+        }
+        get_user()
 
+        const { data: listener } = supabase.auth.onAuthStateChange(
+            (event, session) => {set_user(session?.user ?? null)}
+        )
+        return () => {listener.subscription.unsubscribe()}
+    }, [])
+    
 
     const filtered_media = medias.filter(item => item.category === category)
   
@@ -44,8 +58,8 @@ function Gallery() {
                         filtered_media.map(piece => {
                             return <Media_element name={piece.name} key={piece.name} src={piece.path} category={category}/>
                         })
-                        
                     }
+                    {user?.app_metadata?.is_admin? <a onClick={() => {return <div></div>}} className="fixed flex justify-center items-center select-none rounded-md font-bold h-12 w-12 right-8 bottom-4 text-3xl pb-1.5 text-cyan-600 bg-gray-900 border border-transparent hover:border-[rgb(83,91,243)] transition-all duration-300">+</a> : null}
                 </div>
             </main>
             <Outlet/>
