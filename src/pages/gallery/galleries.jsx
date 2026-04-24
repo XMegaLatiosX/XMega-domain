@@ -31,6 +31,10 @@ function Media_element({ name, src, category }) {
 function Gallery() {
     const { category } = useParams()
     const [user, set_user] = useState(null)
+    const [new_image, set_new_image] = useState(null)
+
+    const [show_form, set_show_form] = useState(false)
+
     useEffect(() => {
         async function get_user() {
             const { data } = await supabase.auth.getUser()
@@ -44,6 +48,18 @@ function Gallery() {
         return () => {listener.subscription.unsubscribe()}
     }, [])
     
+    async function handle_submit(e) {
+        e.preventDefault()
+        set_show_form(false)
+    }
+    function change_img(e) {
+        const file = e.target.files[0]
+        if(file) {
+            const temporary_url = URL.createObjectURL(file)
+            set_new_image(temporary_url)
+        }
+    }
+
 
     const filtered_media = medias.filter(item => item.category === category)
   
@@ -59,7 +75,32 @@ function Gallery() {
                             return <Media_element name={piece.name} key={piece.name} src={piece.path} category={category}/>
                         })
                     }
-                    {user?.app_metadata?.is_admin? <a onClick={() => {return <div></div>}} className="fixed flex justify-center items-center select-none rounded-md font-bold h-12 w-12 right-8 bottom-4 text-3xl pb-1.5 text-cyan-600 bg-gray-900 border border-transparent hover:border-[rgb(83,91,243)] transition-all duration-300">+</a> : null}
+                    {user?.app_metadata?.is_admin? <a onClick={() => set_show_form(true)} className="fixed flex justify-center items-center select-none rounded-md font-bold h-12 w-12 right-8 bottom-4 text-3xl pb-1.5 text-cyan-600 bg-gray-900 border border-transparent hover:border-[rgb(83,91,243)] transition-all duration-300">+</a> : null}
+
+                    {
+                        show_form? 
+                        <div className="fixed left-0 top-28 w-screen h-[calc(100vh-7rem)] flex justify-center items-center">
+                            
+                            <div className="absolute z-10 w-full h-full opacity-25" onClick={() => set_show_form(false)}></div>
+                            
+                            <form onSubmit={handle_submit} className="relative flex flex-col gap-2 p-4 w-72 rounded-sm border-2 border-cyan-600 bg-gray-900 z-20">
+                                <a onClick={() => {set_show_form(false)}} className="absolute top-0 right-0 w-8 h-8 flex items-center justify-center bg-red-900 rounded-bl-sm">X</a>
+                                <input type="text" id="name_input" placeholder="name:" className="p-0.5 pl-2 bg-gray-950 border rounded-sm border-cyan-600"/>
+                                <input type="text" id="description_input" placeholder="description:" className="p-0.5 pl-2 bg-gray-950 border rounded-sm border-cyan-600"/>
+
+                                <select id="file_type_input" className="p-0.5 pl-1 bg-gray-950 border rounded-sm border-cyan-600">
+                                    <option value="image">image</option>
+                                    <option value="video">video</option>
+                                </select>
+                                
+                                <div className="relative flex justify-center w-full">
+                                    <img src={new_image} className="h-32 rounded-sm"/>
+                                    <input type="file" id="file_input" className={`absolute w-full h-32 bg-gray-950 border rounded-sm border-cyan-600 ${new_image? "opacity-0": "opacity-100"}`} onChange={change_img}/>
+                                </div>
+                            </form>
+                        </div>
+                        : null
+                    }
                 </div>
             </main>
             <Outlet/>
