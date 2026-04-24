@@ -34,7 +34,10 @@ function Gallery() {
     const [new_image, set_new_image] = useState(null)
 
     const [show_form, set_show_form] = useState(false)
+    const img_id = crypto.randomUUID()
 
+        
+    // simple listener to user change
     useEffect(() => {
         async function get_user() {
             const { data } = await supabase.auth.getUser()
@@ -51,7 +54,50 @@ function Gallery() {
     async function handle_submit(e) {
         e.preventDefault()
         set_show_form(false)
+
+        const name = document.getElementById('name_input').value
+        const description = document.getElementById('description_input').value
+        const file_type = document.getElementById('file_type_input').value
+
+
+        const file = document.getElementById('file_input').files[0]
+        const ext = file.name.split('.').pop()
+        const file_path = `${category}/${img_id}.${ext}`
+
+        const { error: upload_img_error } = await supabase.storage
+        .from("gallery")
+        .upload(file_path, file, {upsert: true})
+
+        if (upload_img_error) {
+            console.error(upload_img_error);
+            return
+        }
+
+        const {data: data_public_url} = supabase.storage
+        .from("gallery")
+        .getPublicUrl(file_path)
+        const img_public_url = data_public_url.publicUrl
+
+        const {data, error} = await supabase
+        .from("gallery")
+        .insert([{
+            id: img_id,
+            name: name,
+            description: description,
+            category: category,
+            file_type: file_type,
+            url: img_public_url
+        }])
+        if (error) {
+            console.error(error);
+            return
+        }
+        console.log('submited: ', data)
+        set_show_form(false)
+
     }
+
+
     function change_img(e) {
         const file = e.target.files[0]
         if(file) {
@@ -97,6 +143,7 @@ function Gallery() {
                                     <img src={new_image} className="h-32 rounded-sm"/>
                                     <input type="file" id="file_input" className={`absolute w-full h-32 bg-gray-950 border rounded-sm border-cyan-600 ${new_image? "opacity-0": "opacity-100"}`} onChange={change_img}/>
                                 </div>
+                                <button type="submit" className="bg-amber-300"><span>send media!</span></button>
                             </form>
                         </div>
                         : null
