@@ -1,23 +1,19 @@
-import { Link, Navigate, Outlet, useNavigate, useParams } from "react-router-dom"
+import { Link, Navigate, Outlet, useLocation, useNavigate, useParams } from "react-router-dom"
 import Header from "../../components/header"
 import NavUpperBar from "../../components/navupperbar"
 import Screen from "../../components/screen"
 import Sidebar from "../../components/sidebar"
-import medias from "../../data/medias.json"
 import { useEffect, useState } from "react"
 import { supabase } from "../../lib/supabase"
 
 
 
-function Media_element({ name, src, category }) {
+function Media_element({ name, src, category, type }) {
     const navigate = useNavigate()
-    const components = {
-        "mp4": <video src={src} className="rounded-sm"></video>
-    }
     return (
         <a className="relative flex items-start mb-1" onClick={() => navigate(`/gallery/${category}/${name}`)}>
             {
-                components[name.split('.')[1]] || <img src={src} className="rounded-sm" />
+                type === "image"? <img src={src} className="rounded-sm"/> : <video src={src} className="rounded-sm"></video>
             }
             <div className="absolute flex items-center justify-center top-0 right-0 p-0.5">
                 <h2 className="text-sm text-cyan-500 opacity-45"> {name.split('.')[0]} </h2>
@@ -29,14 +25,36 @@ function Media_element({ name, src, category }) {
 
 
 function Gallery() {
+    const location = useLocation()
     const { category } = useParams()
     const [user, set_user] = useState(null)
     const [new_image, set_new_image] = useState(null)
+    
+    const [medias, set_medias] = useState([])
 
     const [show_form, set_show_form] = useState(false)
-    const img_id = crypto.randomUUID()
+    
+    useEffect(() => {
+        async function get_category_medias() {
+            const { data, error } = await supabase
+            .from("gallery")
+            .select("*")
+            .eq("category", category)
+            .order("created_at", {ascending: false})
+            
+            if (error) {
+                console.error(error);
+                return
+            }
 
+            set_medias(data)
+            console.log(data);
+            
+        }
+        get_category_medias()
         
+    }, [location.state])
+    
     // simple listener to user change
     useEffect(() => {
         async function get_user() {
@@ -44,22 +62,25 @@ function Gallery() {
             set_user(data.user)
         }
         get_user()
-
+        
         const { data: listener } = supabase.auth.onAuthStateChange(
             (event, session) => {set_user(session?.user ?? null)}
         )
         return () => {listener.subscription.unsubscribe()}
     }, [])
     
+
     async function handle_submit(e) {
+        
         e.preventDefault()
         set_show_form(false)
-
+        
+        const img_id = crypto.randomUUID()
         const name = document.getElementById('name_input').value
         const description = document.getElementById('description_input').value
         const file_type = document.getElementById('file_type_input').value
-
-
+        
+        
         const file = document.getElementById('file_input').files[0]
         const ext = file.name.split('.').pop()
         const file_path = `${category}/${img_id}.${ext}`
@@ -92,9 +113,9 @@ function Gallery() {
             console.error(error);
             return
         }
-        console.log('submited: ', data)
+        
         set_show_form(false)
-
+        window.location.reload()
     }
 
 
@@ -107,7 +128,6 @@ function Gallery() {
     }
 
 
-    const filtered_media = medias.filter(item => item.category === category)
   
     return (
         <Screen>
@@ -117,8 +137,8 @@ function Gallery() {
             <main className="relative w-screen h-[calc(100vh-7rem)] overflow-auto pt-2">
                 <div className="w-full min-h-[calc(100vh-7rem)] px-1 sm:px-2 lg:px-3 columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-2">
                     {   
-                        filtered_media.map(piece => {
-                            return <Media_element name={piece.name} key={piece.name} src={piece.path} category={category}/>
+                        medias.map(piece => {
+                            return <Media_element name={piece.name} key={piece.id} src={piece.url} category={category} type={piece.file_type}/>
                         })
                     }
                     {user?.app_metadata?.is_admin? <a onClick={() => set_show_form(true)} className="fixed flex justify-center items-center select-none rounded-md font-bold h-12 w-12 right-8 bottom-4 text-3xl pb-1.5 text-cyan-600 bg-gray-900 border border-transparent hover:border-[rgb(83,91,243)] transition-all duration-300">+</a> : null}
