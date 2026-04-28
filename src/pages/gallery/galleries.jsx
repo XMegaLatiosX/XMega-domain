@@ -13,7 +13,7 @@ function Media_element({ name, src, category, type }) {
     return (
         <a className="relative flex items-start mb-1" onClick={() => navigate(`/gallery/${category}/${name}`)}>
             {
-                type === "image"? <img src={src} className="rounded-sm"/> : <video src={src} className="rounded-sm"></video>
+                type === "image"? <img src={src} className="rounded-sm max-h-32"/> : <video src={src} className="rounded-sm max-h-32"></video>
             }
             <div className="absolute flex items-center justify-center top-0 right-0 p-0.5">
                 <h2 className="text-sm text-cyan-500 opacity-45"> {name.split('.')[0]} </h2>
