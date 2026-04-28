@@ -114,7 +114,7 @@ function Gallery() {
             return
         }
         
-        set_show_form(false)
+        close_form()
         window.location.reload()
     }
 
@@ -127,7 +127,12 @@ function Gallery() {
         }
     }
 
-
+    function close_form() {
+        document.getElementById("media_display").src = ""
+        document.getElementById("file_input").value = null
+        set_new_image(null)
+        set_show_form(false)
+    }
   
     return (
         <Screen>
@@ -147,10 +152,10 @@ function Gallery() {
                         show_form? 
                         <div className="fixed left-0 top-28 w-screen h-[calc(100vh-7rem)] flex justify-center items-center">
                             
-                            <div className="absolute z-10 w-full h-full opacity-25" onClick={() => set_show_form(false)}></div>
+                            <div className="absolute z-10 w-full h-full opacity-25" onClick={close_form}></div>
                             
                             <form onSubmit={handle_submit} className="relative flex flex-col gap-2 p-4 w-72 rounded-sm border-2 border-cyan-600 bg-gray-900 z-20">
-                                <a onClick={() => {set_show_form(false)}} className="absolute top-0 right-0 w-8 h-8 flex items-center justify-center bg-red-900 rounded-bl-sm">X</a>
+                                <a onClick={close_form} className="absolute top-0 right-0 w-8 h-8 flex items-center justify-center bg-red-900 rounded-bl-sm">X</a>
                                 <input type="text" id="name_input" placeholder="name:" className="p-0.5 pl-2 bg-gray-950 border rounded-sm border-cyan-600"/>
                                 <input type="text" id="description_input" placeholder="description:" className="p-0.5 pl-2 bg-gray-950 border rounded-sm border-cyan-600"/>
 
@@ -160,7 +165,7 @@ function Gallery() {
                                 </select>
                                 
                                 <div className="relative flex justify-center w-full">
-                                    <img src={new_image} className="h-32 rounded-sm"/>
+                                    <img id="media_display" src={new_image} className="h-32 rounded-sm"/>
                                     <input type="file" id="file_input" className={`absolute w-full h-32 bg-gray-950 border rounded-sm border-cyan-600 ${new_image? "opacity-0": "opacity-100"}`} onChange={change_img}/>
                                 </div>
                                 <button type="submit" className="bg-amber-300"><span>send media!</span></button>
