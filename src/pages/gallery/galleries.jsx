@@ -73,7 +73,7 @@ function Gallery() {
     async function handle_submit(e) {
         
         e.preventDefault()
-        set_show_form(false)
+        close_form()
         
         const img_id = crypto.randomUUID()
         const name = document.getElementById('name_input').value
@@ -128,8 +128,6 @@ function Gallery() {
     }
 
     function close_form() {
-        document.getElementById("media_display").src = ""
-        document.getElementById("file_input").value = null
         set_new_image(null)
         set_show_form(false)
     }
