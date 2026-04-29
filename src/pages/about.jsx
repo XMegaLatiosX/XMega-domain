@@ -8,14 +8,24 @@ function About() {
     const audioRef = useRef(null)
     useEffect(() => {
         let played = false 
-        function handle_scroll(e) {
-            if(played || e.deltaY < 0) return
+        function start_audio() {
+            if(played) return
 
             audioRef.current?.play()
             played = true
         }
+        function handle_scroll(e) {
+            if (e.deltaY > 0) start_audio()
+        }
+        function handle_touch(e) {
+                start_audio()
+        }
+        window.addEventListener('touchmove', handle_touch)
         window.addEventListener('wheel', handle_scroll)
-        return () => window.removeEventListener('wheel', handle_scroll)
+        return () => {
+            window.removeEventListener('touchmove', handle_touch)
+            window.removeEventListener('wheel', handle_scroll)
+        }
     }, [])
     return (
         <Screen>

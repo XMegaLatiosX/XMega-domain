@@ -23,7 +23,7 @@ function Post({ icon, thumbnail, title, slug, summary, date, to}) {
                 </div>
                 <span className="absolute right-0 bottom-0 text-xs">{clean_date}</span>
             </div>
-            {thumbnail && (<img className="shadow-md shadow-gray-500 mb-3" src={thumbnail}></img>)}
+            {thumbnail && (<img className="shadow-sm shadow-cyan-600 mb-3" src={thumbnail}></img>)}
             <p className="mb-6">{summary}</p>
         </Link>
     )
