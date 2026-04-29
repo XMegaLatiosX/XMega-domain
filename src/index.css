@@ -36,6 +36,9 @@
 .pixel-art {
     image-rendering: pixelated;
 }
+.pixel-font {
+  font-family: 'Pixel_font', sans-serif;
+}
 .UpperBar::-webkit-scrollbar {
     display: none;
 }
