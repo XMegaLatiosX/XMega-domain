@@ -27,13 +27,3 @@ export default function Home() {
         </Screen>
     )
 }
-
-async function testConnection() {
-    const { data, error } = await supabase.from('blog_posts').select('*')
-    if (error) {
-        console.error("ERRO: ", error)
-    } else {
-        console.log("sucesso!: ", data)
-    }
-}
-testConnection()
