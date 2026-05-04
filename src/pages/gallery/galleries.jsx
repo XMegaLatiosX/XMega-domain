@@ -5,6 +5,7 @@ import Screen from "../../components/screen"
 import Sidebar from "../../components/sidebar"
 import { useEffect, useState } from "react"
 import { supabase } from "../../lib/supabase"
+import { v4 } from "uuid"
 
 
 
@@ -75,7 +76,7 @@ function Gallery() {
         e.preventDefault()
         close_form()
         
-        const img_id = crypto.randomUUID()
+        const img_id = v4()
         const name = document.getElementById('name_input').value
         const description = document.getElementById('description_input').value
         const file_type = document.getElementById('file_type_input').value

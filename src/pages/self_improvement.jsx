@@ -5,6 +5,7 @@ import Screen from "../components/screen"
 import Sidebar from "../components/sidebar"
 import { supabase } from "../lib/supabase"
 import star_icon from "../assets/images/star_icon.png";
+import { v4 } from "uuid";
 
 function Skill({}) {
     return (
@@ -97,7 +98,7 @@ function Form({user, skill_id, thumbnail, name, is_public, description, target, 
     async function handle_submit(e) {
         e.preventDefault()
         if (skill_id) {
-            update_skill(key)
+            update_skill()
             return
         }
         if (!user) {
@@ -105,7 +106,7 @@ function Form({user, skill_id, thumbnail, name, is_public, description, target, 
             return
         }
         
-        const new_skill_id = crypto.randomUUID()
+        const new_skill_id = v4()
         async function insert_skill() {
             let thumbnail_public_url = null
             let target_public_url = null
@@ -212,13 +213,15 @@ function Form({user, skill_id, thumbnail, name, is_public, description, target, 
         
     }
     async function update_skill() {
+
     }
     if (traits.length == 0) add_trait_block()
 
 
 
     function add_trait_block() {
-        const new_trait = {id: crypto.randomUUID(), name: '', description: '', rating: 10}
+        const new_trait_id = v4()
+        const new_trait = {id: new_trait_id, name: '', description: '', rating: 10}
         set_traits([...traits, new_trait])
     }
     function remove_trait_block(id) {

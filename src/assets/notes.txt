@@ -1,0 +1,14 @@
+to see the inspector of an android mobile device:
+
+turn usb debugging true in your phone settings
+conect usb
+open:
+chrome://inspect/
+on your computer chrome
+
+in your computer terminal, run:
+adb devices
+
+agre the pop up on your phone
+
+now change in your notification the usb usage until the page appears on chrome inpector

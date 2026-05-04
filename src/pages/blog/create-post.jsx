@@ -6,6 +6,7 @@ import Sidebar from "../../components/sidebar"
 import { Navigate, useNavigate } from "react-router-dom"
 import { useEffect, useRef, useState } from "react"
 import { supabase } from "../../lib/supabase"
+import { v4 } from "uuid"
 
 
 
@@ -84,7 +85,7 @@ function CreatePost() {
     async function handle_submit(e) {
         e.preventDefault()
 
-        const post_id = crypto.randomUUID()
+        const post_id = v4()
         let formated_content = []
 
         // read every content, passing just type and value, if its an image, upload to bucket and set bucket publicurl as value
