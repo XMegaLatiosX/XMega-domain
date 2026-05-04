@@ -9,6 +9,21 @@
   src: url('/fonts/ITGridbitDemo-Regular.otf') format('opentype');
 }
 
+.input_icon_div {
+  @apply relative flex justify-center items-center h-7.5 w-7.5 border rounded-sm border-cyan-600 bg-gray-950 hover:border-cyan-900 cursor-pointer transition-all duration-300;
+}
+.input_icon {
+  @apply w-7.5 bg-gray-950 border border-cyan-600 rounded-sm opacity-1 cursor-pointer;
+}
+.input_icon_display {
+  @apply absolute h-full w-full rounded-sm z-10 pointer-events-none;
+}
+
+
+.input_text {
+  @apply bg-gray-950 border border-cyan-600 mb-4 rounded-sm p-0.5 pl-2 max-h-6.5;
+}
+
 .arrow {
   border: solid rgba(0, 255, 255, 1);
   border-width: 0 .5rem .5rem 0;
@@ -129,25 +144,6 @@ h1 {
   line-height: 1.1;
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
@@ -155,8 +151,5 @@ button:focus-visible {
   }
   a:hover {
     color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
   }
 }
