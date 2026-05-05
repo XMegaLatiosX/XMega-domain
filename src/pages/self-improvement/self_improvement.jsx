@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react"
-import Header from "../components/header"
-import NavUpperBar from "../components/navupperbar"
-import Screen from "../components/screen"
-import Sidebar from "../components/sidebar"
-import { supabase } from "../lib/supabase"
-import star_icon from "../assets/images/star_icon.png";
+import Header from "../../components/header"
+import NavUpperBar from "../../components/navupperbar"
+import Screen from "../../components/screen"
+import Sidebar from "../../components/sidebar"
+import { supabase } from "../../lib/supabase"
+import star_icon from "../../assets/images/star_icon.png";
 import { v4 } from "uuid";
 
 function Skill({}) {
@@ -47,7 +47,7 @@ function Trait({id, on_delete, on_change, name, description, rating}) {
 
     return (
         <div className="relative flex flex-col bg-gray-800 p-3 pb-10">
-            <button onClick={() => on_delete(id)} className="whitespace-nowrap absolute flex justify-center items-center right-0 top-0 px-2 min-w-8 h-7 bg-red-800 hover:bg-red-900 rounded-bl-sm text-red-300 hover:text-red-500 font-bold transition-all duration-300">remove trait X</button>
+            <a onClick={() => on_delete(id)} className="whitespace-nowrap absolute flex justify-center items-center right-0 top-0 px-2 min-w-8 h-7 bg-red-800 hover:bg-red-900 rounded-bl-sm text-red-300 hover:text-red-500 font-bold transition-all duration-300">remove trait X</a>
             
             <span>name:</span>
             <input type="text" value={trait_name} onChange={(e) => set_trait_name(e.target.value)} className="input_text" placeholder="ex: Perspective"/>
@@ -62,7 +62,7 @@ function Trait({id, on_delete, on_change, name, description, rating}) {
                 </div>
                 
                 <input type="range" onChange={(e) => set_trait_rating(e.target.value)} id="skill_self_grade" min="0" max="100" value={trait_rating}
-                style={{backgroundImage: `linear-gradient(to right, green ${trait_rating - 1}%, lime ${trait_rating - 1}%, lime ${trait_rating}%, #030712 ${trait_rating * 1.025}%)`}}
+                style={{backgroundImage: `linear-gradient(to right, green ${trait_rating - 1}%, #00c950 ${trait_rating - 1}%, #00c950 ${trait_rating}%, #030712 ${trait_rating * 1.025}%)`}}
                     className="border w-full h-7.5 rounded-2xl  border-cyan-600 cursor-pointer appearance-none
                     [&::-webkit-slider-thumb]:opacity-10 [&::-webkit-slider-thumb]:max-w-full [&::-webkit-slider-thumb]:w-20"
                 />
@@ -71,6 +71,67 @@ function Trait({id, on_delete, on_change, name, description, rating}) {
         </div>
     )
 }
+
+async function get_public_urls(user_id, skill_id, thumbnail, target, current) {
+    let thumbnail_public_url = null
+    let target_public_url = null
+    let current_public_url = null
+    if (thumbnail) {
+        const thumbnail_file = thumbnail
+        const thumbnail_ext = thumbnail_file.name.split('.').pop()
+        const thumbnail_file_path = `${user_id}/${skill_id}/thumbnail.${thumbnail_ext}`
+        const {error: thumbnail_upload_error} = await supabase.storage
+        .from("skills")
+        .upload(thumbnail_file_path, thumbnail_file, {upsert: true})
+        if (thumbnail_upload_error) {
+            console.error(thumbnail_upload_error);
+            return
+        }
+        const {data: thumbnail_data_url} = await supabase.storage
+        .from("skills")
+        .getPublicUrl(thumbnail_file_path)
+        thumbnail_public_url = thumbnail_data_url.publicUrl
+    }
+    
+    
+
+    if (target) {
+        const target_file = target
+        const target_ext = target_file.name.split('.').pop()
+        const target_file_path = `${user_id}/${skill_id}/target.${target_ext}`
+        const {error: target_upload_error} = await supabase.storage
+        .from("skills")
+        .upload(target_file_path, target_file, {upsert: true})
+        if (target_upload_error) {
+            console.error(target_upload_error);
+            return
+        }
+        const {data: target_data_url} = await supabase.storage
+        .from("skills")
+        .getPublicUrl(target_file_path)
+        target_public_url = target_data_url.publicUrl
+    }
+    
+
+    if (current) {
+        const current_file = current
+        const current_ext = current_file.name.split('.').pop()
+        const current_file_path = `${user_id}/${skill_id}/current.${current_ext}`
+        const {error: current_upload_error} = await supabase.storage
+        .from("skills")
+        .upload(current_file_path, current_file, {upsert: true})
+        if (current_upload_error) {
+            console.error(current_upload_error);
+            return
+        }
+        const {data: current_data_url} = await supabase.storage
+        .from("skills")
+        .getPublicUrl(current_file_path)
+        current_public_url = current_data_url.publicUrl
+    }
+    return {thumbnail_public_url, target_public_url, current_public_url}
+}
+
 
 function Form({user, skill_id, thumbnail, name, is_public, description, target, current, rating, skill_traits}) {
     const [inpt_thumbnail, set_inpt_thumbnail] = useState(thumbnail || null)
@@ -94,11 +155,14 @@ function Form({user, skill_id, thumbnail, name, is_public, description, target, 
     const [current_level_display, set_current_level_display] = useState(current || null)
     const [target_level_display, set_target_level_display] = useState(target || null)
 
-    
+    useEffect(() => {
+        if (traits.length == 0) add_trait_block()
+    }, [])
+
     async function handle_submit(e) {
         e.preventDefault()
         if (skill_id) {
-            update_skill()
+            update_skill(e)
             return
         }
         if (!user) {
@@ -108,78 +172,21 @@ function Form({user, skill_id, thumbnail, name, is_public, description, target, 
         
         const new_skill_id = v4()
         async function insert_skill() {
-            let thumbnail_public_url = null
-            let target_public_url = null
-            let current_public_url = null
     
-            async function get_public_urls() {
-                if (inpt_thumbnail) {
-                    const thumbnail_file = inpt_thumbnail
-                    const thumbnail_ext = thumbnail_file.name.split('.').pop()
-                    const thumbnail_file_path = `${user.id}/${new_skill_id}/thumbnail.${thumbnail_ext}`
-                    const {error: thumbnail_upload_error} = await supabase.storage
-                    .from("skills")
-                    .upload(thumbnail_file_path, thumbnail_file, {upsert: true})
-                    if (thumbnail_upload_error) {
-                        console.error(thumbnail_upload_error);
-                        return
-                    }
-                    const {data: thumbnail_data_url} = await supabase.storage
-                    .from("skills")
-                    .getPublicUrl(thumbnail_file_path)
-                    thumbnail_public_url = thumbnail_data_url.publicUrl
-                }
-                
-                
-        
-                if (inpt_target) {
-                    const target_file = inpt_target
-                    const target_ext = target_file.name.split('.').pop()
-                    const target_file_path = `${user.id}/${new_skill_id}/target.${target_ext}`
-                    const {error: target_upload_error} = await supabase.storage
-                    .from("skills")
-                    .upload(target_file_path, target_file, {upsert: true})
-                    if (target_upload_error) {
-                        console.error(target_upload_error);
-                        return
-                    }
-                    const {data: target_data_url} = await supabase.storage
-                    .from("skills")
-                    .getPublicUrl(target_file_path)
-                    target_public_url = target_data_url.publicUrl
-                }
-                
-        
-                if (inpt_current) {
-                    const current_file = inpt_current
-                    const current_ext = current_file.name.split('.').pop()
-                    const current_file_path = `${user.id}/${new_skill_id}/current.${current_ext}`
-                    const {error: current_upload_error} = await supabase.storage
-                    .from("skills")
-                    .upload(current_file_path, current_file, {upsert: true})
-                    if (current_upload_error) {
-                        console.error(current_upload_error);
-                        return
-                    }
-                    const {data: current_data_url} = await supabase.storage
-                    .from("skills")
-                    .getPublicUrl(current_file_path)
-                    current_public_url = current_data_url.publicUrl
-                }
-            }await get_public_urls()
+            const {thumbnail_url, target_url, current_url} = await get_public_urls(user.id, skill_id, inpt_thumbnail, inpt_target, inpt_current)
             
             const {data, error} = await supabase
             .from("skills")
             .insert([{
                 id: new_skill_id,
                 user_id: user.id,
-                icon: thumbnail_public_url,
+                icon: thumbnail_url,
                 name: inpt_name,
                 description: inpt_description,
                 self_rating: skill_rating,
                 avarage_rating: skill_rating,
-                target_level: target_public_url,
-                current_level: current_public_url,
+                target_level: target_url,
+                current_level: current_url,
                 is_public: inpt_public
             }])
             if (error) {
@@ -213,9 +220,46 @@ function Form({user, skill_id, thumbnail, name, is_public, description, target, 
         
     }
     async function update_skill() {
+        const {thumbnail_url, target_url, current_url} = await get_public_urls(user.id, skill_id, inpt_thumbnail, inpt_target, inpt_current)
 
+        const {error} = await supabase
+        .from('skills')
+        .update({
+            icon: thumbnail_url,
+            name: inpt_name,
+            description: inpt_description,
+            self_rating: skill_rating,
+            avarage_rating: skill_rating,
+            target_level: target_url,
+            current_level: current_url,
+            is_public: inpt_public
+        })
+        .eq("id", skill_id)
+        if (error) {
+            console.error(error);
+            return
+        }
+        console.log("skill updated");
+        console.log(traits);
+        
+        const {error: trait_update_error} = await supabase
+        .from('traits')
+        .upsert(
+            traits.map(trait => ({
+                id: trait.id,
+                skill_id : skill_id,
+                name: trait.name,
+                description: trait.description,
+                self_rating: trait.rating
+            }))
+        )
+        if (trait_update_error) {
+            console.error(trait_update_error);
+            return
+        }
+        console.log("traits updated aswell");
+        
     }
-    if (traits.length == 0) add_trait_block()
 
 
 
@@ -224,9 +268,21 @@ function Form({user, skill_id, thumbnail, name, is_public, description, target, 
         const new_trait = {id: new_trait_id, name: '', description: '', rating: 10}
         set_traits([...traits, new_trait])
     }
-    function remove_trait_block(id) {
+
+    async function remove_trait_block(id) {
+        const {error} = await supabase
+        .from("traits")
+        .delete()
+        .eq("id", id)
+
+        if (error) {
+            console.error(error);
+            return
+        }
+        console.log(traits.length);
         set_traits(traits.filter(trait => trait.id !== id))
-        if (traits.length == 0) add_trait_block()
+        if (traits.length == 1) set_traits([{id: v4(), name: '', description: '', rating: 10}])
+        
     }
     function update_trait_block(id, name, desc, rating) {
         set_traits(traits.map(trait => trait.id === id ? {...trait, name: name, description: desc, rating: rating} : trait))
@@ -234,7 +290,7 @@ function Form({user, skill_id, thumbnail, name, is_public, description, target, 
 
     return (
         <div className="flex border border-cyan-600 rounded-md bg-gray-900 mb-16">
-            <form className="p-4 flex flex-col w-full">
+            <form onSubmit={handle_submit} className="p-4 flex flex-col w-full">
 
                 <div className="flex w-full gap-4">
                     <div className="input_icon_div">
@@ -247,16 +303,16 @@ function Form({user, skill_id, thumbnail, name, is_public, description, target, 
                     <div className="relative flex gap-2 h-full">
                         <span className="text-md font-semibold whitespace-nowrap text-center">turn public?</span>
                         <label className="relative inline-block w-16 h-7.5">
-                            <input type="checkbox" value={inpt_public} checked={inpt_public} onChange={(e) => set_inpt_public(e.target.value)} className="peer w-0 h-0 opacity-0"/>
+                            <input type="checkbox" value={inpt_public} checked={inpt_public} onChange={(e) => set_inpt_public(e.target.checked)} className="peer w-0 h-0 opacity-0"/>
                             <span className="
                                 ring-1 ring-cyan-600 bg-red-950
                                 absolute cursor-pointer top-0 left-0 right-0 bottom-0 rounded-2xl
-                                peer-checked:bg-lime-600
+                                peer-checked:bg-[#008000]
                                 after:content-[''] after:absolute
                                 after:bg-red-600 after:rounded-2xl after:h-7.5 after:w-7.5
                                 after:transition-all
                                 peer-checked:after:translate-x-8.5
-                                peer-checked:after:bg-lime-400
+                                peer-checked:after:bg-green-500
                                 transition-all
                             "></span>
                         </label>
@@ -280,7 +336,7 @@ function Form({user, skill_id, thumbnail, name, is_public, description, target, 
                             {/* avarage ranting
                             self rating */}
                             <input type="range" id="skill_self_grade" min="0" max="100" value={skill_rating} onChange={(e) => set_skill_rating(e.target.value)}
-                            style={{backgroundImage: `linear-gradient(to right, green ${skill_rating - 1}%, lime ${skill_rating - 1}%, lime ${skill_rating}%, #030712 ${skill_rating * 1.025}%)`}}
+                            style={{backgroundImage: `linear-gradient(to right, green ${skill_rating - 1}%, #00c950 ${skill_rating - 1}%, #00c950 ${skill_rating}%, #030712 ${skill_rating * 1.025}%)`}}
                                 className="border w-full h-7.5 rounded-2xl  border-cyan-600 cursor-pointer appearance-none
                                 [&::-webkit-slider-thumb]:opacity-0 [&::-webkit-slider-thumb]:max-w-full [&::-webkit-slider-thumb]:w-20"
                             />
@@ -288,7 +344,7 @@ function Form({user, skill_id, thumbnail, name, is_public, description, target, 
 
                         <div className="input_icon_div">
                             <img className="input_icon_display right-0" src={target_level_display}></img>
-                            <input type="file" className="input_icon" onChange={(e) => {set_target_level_display(set_image_display(e.target.files[0])), inpt_target(e.target.files[0])}}/>
+                            <input type="file" className="input_icon" onChange={(e) => {set_target_level_display(set_image_display(e.target.files[0])), set_inpt_target(e.target.files[0])}}/>
                         </div>
                     </div>
                     
@@ -302,8 +358,6 @@ function Form({user, skill_id, thumbnail, name, is_public, description, target, 
                     <span>traits:</span>
                     <div>
                         {traits.map((trait) => {
-                            console.log(trait.name);
-                            
                             return <Trait id={trait.id} key={trait.id} name={trait.name} description={trait.description} rating={trait.self_rating} on_delete={remove_trait_block} on_change={(name, desc, rating) => update_trait_block(trait.id, name, desc, rating)}></Trait>
                         })}
 

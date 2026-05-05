@@ -12,7 +12,8 @@ import Settings from './pages/settings'
 import Programming from './pages/programming'
 import Feedback from './pages/feedback'
 import CreatePost from './pages/blog/create-post'
-import Self_improvement from './pages/self_improvement'
+import Self_improvement from './pages/self-improvement/self_improvement'
+import Others_improvement from './pages/self-improvement/others-improvement'
 
 function App() {
 
@@ -30,6 +31,7 @@ function App() {
             </Route>
             <Route path="/progress" element={<Progress/>} />
             <Route path="/self-improvement" element={<Self_improvement/>} />
+            <Route path="/self-improvement/:nickname" element={<Others_improvement/>} />
             <Route path="/programming" element={<Programming/>} />
             <Route path="/settings" element={<Settings/>} />
             <Route path="/feedback" element={<Feedback/>} />

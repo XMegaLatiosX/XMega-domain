@@ -141,7 +141,7 @@ function Header() {
         const { data: existing } = await supabase
         .from("profiles")
         .select("id")
-        .eq("nickname", nickname)
+        .eq("nickname_lower", nickname.toLowerCase())
         .maybeSingle()
         if (existing) {
             console.log("nickname already in use")
@@ -164,7 +164,8 @@ function Header() {
         .from("profiles")
         .insert({
             id: data.user.id,
-            nickname
+            nickname: nickname,
+            nickname_lower: nickname.toLocaleLowerCase()
         })
 
         if (profile_error) {
