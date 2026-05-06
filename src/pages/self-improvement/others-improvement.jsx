@@ -53,12 +53,13 @@ function Skill({id, thumbnail, name, description, current, target, rating}) {
 
                 <div className="relative h-8 w-175 max-w-full">
                     <div className="absolute w-full h-full items-center justify-around flex">
-                        <span className="text-white font-bold text-xl">{rating / 10 + "/10"}</span>
+                        <span className="text-white font-bold text-xl z-30">{rating / 10 + "/10"}</span>
                     </div>
                     <input type="range" defaultValue={rating}
-                    style={{backgroundImage: `linear-gradient(to right, green ${rating - 1}%, #00c950 ${rating - 1}%, #00c950 ${rating}%, #030712 ${rating * 1.025}%)`}}
-                        className="border w-full h-7.5 rounded-2xl  border-cyan-600  appearance-none
-                        [&::-webkit-slider-thumb]:opacity-0 [&::-webkit-slider-thumb]:max-w-full [&::-webkit-slider-thumb]:w-20"
+                        style={{backgroundImage: `linear-gradient(to right, green ${rating -1}%, #00c950 ${rating}%, #00c950 ${rating - -.5}%, #030712 ${rating - -1}%)`}}
+                            className="border w-full h-7.5 rounded-2xl bg-gray-950 border-cyan-600  appearance-none z-30 outline-0 opacity-75 hover:opacity-95 transition-all duration-100
+                            [&::-webkit-slider-thumb]:opacity-0
+                        "
                     />
                 </div>
 
@@ -84,12 +85,13 @@ function Traits({name, description, rating}) {
             <span className="m-4 text-md">{description}</span>
             <div className="relative h-8 w-200 max-w-full">
                 <div className="absolute w-full h-full items-center justify-around flex">
-                    <span className="text-white font-bold text-xl">{rating / 10 + "/10"}</span>
+                    <span className="text-white font-bold text-xl z-30">{rating / 10 + "/10"}</span>
                 </div>
                 <input type="range" defaultValue={rating}
-                style={{backgroundImage: `linear-gradient(to right, green ${rating - 1}%, #00c950 ${rating - 1}%, #00c950 ${rating}%, #030712 ${rating * 1.025}%)`}}
-                    className="border w-full h-7.5 rounded-2xl  border-cyan-600  appearance-none
-                    [&::-webkit-slider-thumb]:opacity-0 [&::-webkit-slider-thumb]:max-w-full [&::-webkit-slider-thumb]:w-20"
+                    style={{backgroundImage: `linear-gradient(to right, green ${rating -1}%, #00c950 ${rating}%, #00c950 ${rating - -.5}%, #030712 ${rating - -1}%)`}}
+                        className="border w-full h-7.5 rounded-2xl bg-gray-950 border-cyan-600  appearance-none z-30 outline-0 opacity-75 hover:opacity-95 transition-all duration-100
+                        [&::-webkit-slider-thumb]:opacity-0
+                    "
                 />
             </div>
             <hr className="mt-6 w-full text-gray-500" />

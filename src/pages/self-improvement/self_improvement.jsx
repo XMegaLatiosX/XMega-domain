@@ -6,6 +6,7 @@ import Sidebar from "../../components/sidebar"
 import { supabase } from "../../lib/supabase"
 import star_icon from "../../assets/images/star_icon.png";
 import { v4 } from "uuid";
+import { useNavigate } from "react-router-dom"
 
 function Skill({}) {
     return (
@@ -46,28 +47,29 @@ function Trait({id, on_delete, on_change, name, description, rating}) {
     }, [trait_name, trait_description, trait_rating])
 
     return (
-        <div className="relative flex flex-col bg-gray-800 p-3 pb-10">
+        <div className="relative flex flex-col bg-gray-800 px-3 pb-16">
+            <hr className="text-gray-600 mb-10"/>
             <a onClick={() => on_delete(id)} className="whitespace-nowrap absolute flex justify-center items-center right-0 top-0 px-2 min-w-8 h-7 bg-red-800 hover:bg-red-900 rounded-bl-sm text-red-300 hover:text-red-500 font-bold transition-all duration-300">remove trait X</a>
             
-            <span>name:</span>
+            <span className="pl-1.5">name:</span>
             <input type="text" value={trait_name} onChange={(e) => set_trait_name(e.target.value)} className="input_text" placeholder="ex: Perspective"/>
 
-            <span>description:</span>
+            <span className="pl-1.5">description:</span>
             <textarea value={trait_description} onChange={(e) => set_trait_description(e.target.value)} className="input_text min-h-16" placeholder="ex: How well do I convey a sense of depth?"></textarea>
             
-            <span className="w-full text-center">self rating:</span>
+            <span className="pl-1.5">self rating:</span>
             <div className="relative h-8 w-200 max-w-full">
                 <div className="absolute w-full h-full items-center justify-around flex">
-                    <span className="text-white font-bold text-xl">{trait_rating / 10 + "/10"}</span>
+                    <span className="text-white font-bold text-xl z-30 pointer-events-none">{trait_rating / 10 + "/10"}</span>
                 </div>
                 
                 <input type="range" onChange={(e) => set_trait_rating(e.target.value)} id="skill_self_grade" min="0" max="100" value={trait_rating}
-                style={{backgroundImage: `linear-gradient(to right, green ${trait_rating - 1}%, #00c950 ${trait_rating - 1}%, #00c950 ${trait_rating}%, #030712 ${trait_rating * 1.025}%)`}}
-                    className="border w-full h-7.5 rounded-2xl  border-cyan-600 cursor-pointer appearance-none
-                    [&::-webkit-slider-thumb]:opacity-10 [&::-webkit-slider-thumb]:max-w-full [&::-webkit-slider-thumb]:w-20"
+                            style={{backgroundImage: `linear-gradient(to right, green ${trait_rating -1}%, #00c950 ${trait_rating}%, #00c950 ${trait_rating - -.5}%, #030712 ${trait_rating - -1}%)`}}
+                    className="border w-full h-7.5 rounded-2xl bg-gray-950 border-cyan-600 cursor-pointer appearance-none z-30 outline-0 opacity-75 hover:opacity-95 transition-all duration-100
+                    [&::-webkit-slider-thumb]:opacity-0
+                    "
                 />
             </div>
-            <hr className="text-gray-600 mt-10"/>
         </div>
     )
 }
@@ -76,6 +78,12 @@ async function get_public_urls(user_id, skill_id, thumbnail, target, current) {
     let thumbnail_public_url = null
     let target_public_url = null
     let current_public_url = null
+    
+    console.log("target::", target);
+
+    console.log("current::", current);
+    
+    
     if (thumbnail) {
         const thumbnail_file = thumbnail
         const thumbnail_ext = thumbnail_file.name.split('.').pop()
@@ -91,6 +99,7 @@ async function get_public_urls(user_id, skill_id, thumbnail, target, current) {
         .from("skills")
         .getPublicUrl(thumbnail_file_path)
         thumbnail_public_url = thumbnail_data_url.publicUrl
+    console.log("thumbnail::", thumbnail);
     }
     
     
@@ -129,20 +138,22 @@ async function get_public_urls(user_id, skill_id, thumbnail, target, current) {
         .getPublicUrl(current_file_path)
         current_public_url = current_data_url.publicUrl
     }
+    console.log("here maybe", thumbnail_public_url, target_public_url, current_public_url);
+    
     return {thumbnail_public_url, target_public_url, current_public_url}
 }
 
 
-function Form({user, skill_id, thumbnail, name, is_public, description, target, current, rating, skill_traits}) {
-    const [inpt_thumbnail, set_inpt_thumbnail] = useState(thumbnail || null)
-    const [inpt_public, set_inpt_public] = useState(is_public || false)
+function Form({user, skill_id, thumbnail, name, is_public, description, target, current, rating, skill_traits, on_delete}) {
+    const [inpt_thumbnail, set_inpt_thumbnail] = useState(null)
+    const [inpt_public, set_inpt_public] = useState(is_public || true)
 
     const [inpt_name, set_inpt_name] = useState(name || "")
     const [inpt_description, set_inpt_description] = useState(description || "")
     
     const [skill_rating, set_skill_rating] = useState(rating || 50)
-    const [inpt_current, set_inpt_current] = useState(current || null)
-    const [inpt_target, set_inpt_target] = useState(target || null)
+    const [inpt_current, set_inpt_current] = useState(null)
+    const [inpt_target, set_inpt_target] = useState(null)
     
 
 
@@ -172,21 +183,26 @@ function Form({user, skill_id, thumbnail, name, is_public, description, target, 
         
         const new_skill_id = v4()
         async function insert_skill() {
-    
-            const {thumbnail_url, target_url, current_url} = await get_public_urls(user.id, skill_id, inpt_thumbnail, inpt_target, inpt_current)
+            const result = await get_public_urls(user.id, new_skill_id, inpt_thumbnail, inpt_target, inpt_current)
+            console.log("result", result);
+            
+            const {thumbnail_public_url, target_public_url, current_public_url} = await get_public_urls(user.id, new_skill_id, inpt_thumbnail, inpt_target, inpt_current)
+            console.log("hm..",thumbnail_public_url);
+            console.log("hm..",target_public_url);
+            console.log("hm..",current_public_url);
             
             const {data, error} = await supabase
             .from("skills")
             .insert([{
                 id: new_skill_id,
                 user_id: user.id,
-                icon: thumbnail_url,
+                icon: thumbnail_public_url,
                 name: inpt_name,
                 description: inpt_description,
                 self_rating: skill_rating,
                 avarage_rating: skill_rating,
-                target_level: target_url,
-                current_level: current_url,
+                target_level: target_public_url,
+                current_level: current_public_url,
                 is_public: inpt_public
             }])
             if (error) {
@@ -198,40 +214,43 @@ function Form({user, skill_id, thumbnail, name, is_public, description, target, 
         }await insert_skill()
         
         async function insert_traits() {
-            for (const trait of traits) {
-                const {data, error} = await supabase
-                .from("traits")
-                .insert([{
+            const valid_traits = traits.filter((trait) => trait.name || trait.description)
+            console.log(valid_traits);
+            
+            if (valid_traits == 0) return
+            
+            const {data, error} = await supabase
+            .from("traits")
+            .insert(
+                valid_traits.map(trait => ({
                     id: trait.id,
                     skill_id: new_skill_id,
                     name: trait.name,
                     description: trait.description,
                     self_rating: trait.rating
-                }])
-                if (error) {
-                    console.error(error);
-                    return
-                }
-                console.log("trait ", trait.name, " added.");
-                
-                
+                }))
+            )
+            if (error) {
+                console.error(error);
+                return
             }
+                
         }await insert_traits()
         
     }
     async function update_skill() {
-        const {thumbnail_url, target_url, current_url} = await get_public_urls(user.id, skill_id, inpt_thumbnail, inpt_target, inpt_current)
+        const {thumbnail_public_url, target_public_url, current_public_url} = await get_public_urls(user.id, skill_id, inpt_thumbnail, inpt_target, inpt_current)
 
         const {error} = await supabase
         .from('skills')
         .update({
-            icon: thumbnail_url,
+            icon: thumbnail_url || skill_thumbnail_display,
             name: inpt_name,
             description: inpt_description,
             self_rating: skill_rating,
             avarage_rating: skill_rating,
-            target_level: target_url,
-            current_level: current_url,
+            target_level: target_url || target_level_display,
+            current_level: current_url || current_level_display,
             is_public: inpt_public
         })
         .eq("id", skill_id)
@@ -242,10 +261,12 @@ function Form({user, skill_id, thumbnail, name, is_public, description, target, 
         console.log("skill updated");
         console.log(traits);
         
+        const valid_traits = traits.filter((trait) => trait.name || trait.description)
+        if (valid_traits.length == 0) return console.log("no traits", traits);
         const {error: trait_update_error} = await supabase
         .from('traits')
         .upsert(
-            traits.map(trait => ({
+            valid_traits.map(trait => ({
                 id: trait.id,
                 skill_id : skill_id,
                 name: trait.name,
@@ -260,7 +281,6 @@ function Form({user, skill_id, thumbnail, name, is_public, description, target, 
         console.log("traits updated aswell");
         
     }
-
 
 
     function add_trait_block() {
@@ -292,13 +312,14 @@ function Form({user, skill_id, thumbnail, name, is_public, description, target, 
         <div className="flex border border-cyan-600 rounded-md bg-gray-900 mb-16">
             <form onSubmit={handle_submit} className="p-4 flex flex-col w-full">
 
-                <div className="flex w-full gap-4">
-                    <div className="input_icon_div">
-                        <img className="input_icon_display" src={skill_thumbnail_display}></img>
-                        <input type="file" className="input_icon" onChange={(e) => {set_skill_thumbnail_display(set_image_display(e.target.files[0])), set_inpt_thumbnail(e.target.files[0])}}/>
+                <div className="flex w-full gap-4 my-2">
+
+                    <div className="input_icon_div min-h-16 min-w-16">
+                        <img className="input_icon_display min-h-16 min-w-16 object-cover" src={skill_thumbnail_display}></img>
+                        <input type="file" className="input_icon min-h-16 min-w-16" onChange={(e) => {set_skill_thumbnail_display(set_image_display(e.target.files[0])), set_inpt_thumbnail(e.target.files[0])}}/>
                     </div>
 
-                    <input type="text" value={inpt_name} onChange={(e) => set_inpt_name(e.target.value)} className="input_text min-h-7.5 w-full" placeholder="skill name:"/>
+                    <input type="text" value={inpt_name} onChange={(e) => set_inpt_name(e.target.value)} className="input_text h-9 text-2xl w-full" placeholder="skill name:"/>
 
                     <div className="relative flex gap-2 h-full">
                         <span className="text-md font-semibold whitespace-nowrap text-center">turn public?</span>
@@ -331,14 +352,15 @@ function Form({user, skill_id, thumbnail, name, is_public, description, target, 
 
                         <div className="relative h-8 w-200 max-w-full">
                             <div className="absolute w-full h-full items-center justify-around flex">
-                                <span className="text-white font-bold text-xl">{skill_rating / 10 + "/10"}</span>
+                                <span className="text-white font-bold text-xl pointer-events-none z-30">{skill_rating / 10 + "/10"}</span>
                             </div>
                             {/* avarage ranting
                             self rating */}
                             <input type="range" id="skill_self_grade" min="0" max="100" value={skill_rating} onChange={(e) => set_skill_rating(e.target.value)}
-                            style={{backgroundImage: `linear-gradient(to right, green ${skill_rating - 1}%, #00c950 ${skill_rating - 1}%, #00c950 ${skill_rating}%, #030712 ${skill_rating * 1.025}%)`}}
-                                className="border w-full h-7.5 rounded-2xl  border-cyan-600 cursor-pointer appearance-none
-                                [&::-webkit-slider-thumb]:opacity-0 [&::-webkit-slider-thumb]:max-w-full [&::-webkit-slider-thumb]:w-20"
+                            style={{backgroundImage: `linear-gradient(to right, green ${skill_rating -1}%, #00c950 ${skill_rating}%, #00c950 ${skill_rating - -.5}%, #030712 ${skill_rating - -1}%)`}}
+                                className="border w-full h-7.5 rounded-2xl bg-gray-950 border-cyan-600 cursor-pointer appearance-none z-30 outline-0 opacity-75 hover:opacity-95 transition-all duration-100
+                                [&::-webkit-slider-thumb]:opacity-0
+                            "
                             />
                         </div>
 
@@ -358,7 +380,7 @@ function Form({user, skill_id, thumbnail, name, is_public, description, target, 
                     <span>traits:</span>
                     <div>
                         {traits.map((trait) => {
-                            return <Trait id={trait.id} key={trait.id} name={trait.name} description={trait.description} rating={trait.self_rating} on_delete={remove_trait_block} on_change={(name, desc, rating) => update_trait_block(trait.id, name, desc, rating)}></Trait>
+                            return <Trait id={trait.id} key={trait.id} name={trait.name} description={trait.description} rating={trait.self_rating} on_delete={() => remove_trait_block(trait.id)} on_change={(name, desc, rating) => update_trait_block(trait.id, name, desc, rating)}></Trait>
                         })}
 
                         <a onClick={add_trait_block} className="whitespace-nowrap flex justify-center items-center select-none rounded-md font-bold h-12 right-8 bottom-4 mt-4 text-xl pb-1.5 bg-gray-950 border border-transparent hover:border-[rgb(83,91,243)] transition-all duration-300">add trait</a>
@@ -366,7 +388,14 @@ function Form({user, skill_id, thumbnail, name, is_public, description, target, 
                 </div>
 
                 <div className="relative h-16">
-                    <button type="submit" className="absolute whitespace-nowrap flex justify-center items-center select-none rounded-md h-12 right-0 bottom-0 px-2 text-xl border-2 border-transparent bg-green-700 hover:border-[rgb(83,91,243)] transition-all duration-300 text-green-300 font-bold">Save skill</button>
+                    <div className="absolute right-0 bottom-0 flex flex-row gap-4">
+
+                        {skill_id?
+                        <span onClick={() => on_delete(skill_id)} className="whitespace-nowrap flex justify-center items-center select-none rounded-md h-12 right-0 bottom-0 px-2 text-xl border-2 border-transparent bg-red-700 hover:border-red-500 transition-all duration-300 text-red-300 font-bold">Delete skill</span>
+                        : null}
+                        <button type="submit" className="whitespace-nowrap flex justify-center items-center select-none rounded-md h-12 right-0 bottom-0 px-2 text-xl border-2 border-transparent bg-green-700 hover:border-green-500 transition-all duration-300 text-green-300 font-bold">{skill_id? "Save skill" : "Add skill"}</button>
+
+                    </div>
                 </div>
             </form>
         </div>
@@ -413,23 +442,44 @@ function Self_improvement() {
         if(user) get_skills()
     }, [user])
 
+    const navigate = useNavigate()
+    
+    async function delete_skill(id) {
+        const {error} = await supabase
+        .from("skills")
+        .delete()
+        .eq("id", id)
+        if (error) {
+            console.error(error);
+            return
+        }
+        set_skills(skills.filter(skill => skill.id !== id))
+        console.log("skill removed");
+    }
+
     return (
         <Screen>
             <Header/>
             <NavUpperBar/>
             <Sidebar/>
             <main className="relative w-screen h-[calc(100vh-7rem)] overflow-auto pt-2">
-                <div className="w-full flex justify-center py-8">
+                <div className="w-full flex flex-col justify-center items-center py-8">
+                    <span className=" text-7xl text-cyan-500 font-bold mb-16">
+                        Skill tracker
+                    </span>
                     <div className="flex flex-col grow max-w-200">
                         {
                             skills?.length > 0? 
                                 skills.map(skill => {
-                                    return <Form user={user} key={skill.id} skill_id={skill.id} thumbnail={skill.icon} name={skill.name} is_public={skill.is_public} description={skill.description} target={skill.target_level} current={skill.current_level} rating={skill.self_rating} skill_traits={skill.traits}></Form>
+                                    return <Form on_delete={delete_skill} user={user} key={skill.id} skill_id={skill.id} thumbnail={skill.icon} name={skill.name} is_public={skill.is_public} description={skill.description} target={skill.target_level} current={skill.current_level} rating={skill.self_rating} skill_traits={skill.traits}></Form>
                                 })
                             :
-                                <span>skill issues</span>
+                                <span className="my-8">
+                                    You have no skills being tracked yet, create one below and watch your improvment! <br />
+                                    look at mine for example: <a className="text-blue-600 underline cursor-pointer" onClick={() => navigate("/self-improvement/xmega latiosx")}>XMega Skills</a>
+                                </span>
                         }
-                        {user? <Form user={user}></Form> : <span>NO ACCOUNT</span>}
+                        {user? <Form user={user} skill_id={null}></Form> : <span>NO ACCOUNT</span>}
                     </div>
                 </div>
 
