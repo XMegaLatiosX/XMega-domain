@@ -229,10 +229,10 @@ function CreatePost() {
             <NavUpperBar/>
             <Sidebar/>
             <main className="w-screen h-[calc(100vh-7rem)] overflow-auto pt-2">
-                <div className="w-full flex justify-center p-8 h-full">
+                <div className="w-full flex justify-center p-2 sm:p-8 h-9/10 sm:h-full">
 
                     <form className="relative w-full max-w-250 bg-gray-900 rounded-lg flex flex-col px-8 py-4 overflow-auto" onSubmit={handle_submit}>
-
+                        <h1 className="font-bold text-4xl text-cyan-600 mb-8">create post</h1>
                         <div className="flex flex-row justify-around gap-4">
 
                             <div className="relative flex justify-center items-center h-7.5 w-7.5 border rounded-sm border-cyan-600 bg-gray-950 hover:border-cyan-900 transition-all duration-300">
@@ -262,7 +262,7 @@ function CreatePost() {
 
                         <a onClick={add_content_block} className="h-12 w-12 rounded-md font-bold text-3xl flex justify-center items-center pb-1.5 select-none text-cyan-600 bg-gray-950 border border-transparent hover:border-[rgb(83,91,243)] transition-all duration-300">+</a>
 
-                        <button type="submit" className="fixed bottom-14 right-16 border-2 h-8 w-32 p-0 rounded-md border-cyan-950  hover:border-[rgb(83,91,243)] "><span className="w-full h-full select-none text-md flex items-center justify-center text-cyan-600">Create Post</span></button>
+                        <button type="submit" className="fixed bottom-12 right-4 bg-gray-950 sm:bottom-14 sm:right-16 border-2 h-8 w-32 p-0 rounded-md border-cyan-950  hover:border-[rgb(83,91,243)] "><span className="w-full h-full select-none text-md flex items-center justify-center text-cyan-600">Create Post</span></button>
                     </form>
 
                 </div>

@@ -10,7 +10,7 @@ function Progress() {
             <Header/>
             <NavUpperBar/>
             <Sidebar/>
-            <main className="relative w-screen h-[calc(100vh-7rem)] overflow-auto pt-2">
+            <main className="relative w-screen h-[calc(100vh-7rem)] overflow-auto pt-2 px-2">
                 <div className="w-full flex justify-center py-8">
                     <div className="flex flex-col grow max-w-200">
                         {
@@ -24,7 +24,7 @@ function Progress() {
                                     width: goal.percentage+'%'
                                 }
                                 
-                                return <div key={goal.name} className="rounded-3xl bg-gray-900 p-4 mb-6 border border-gray-600">
+                                return <div key={goal.name} className="rounded-3xl bg-gray-900 px-4 pt-3 pb-2 mb-6 border border-gray-600">
 
                                     <h3 className="font-bold text-cyan-400 text-xl">{goal.name}</h3>
                                     <p className="text-gray-600">{goal.description}</p>
@@ -34,7 +34,7 @@ function Progress() {
                                         <span className="font-extralight font-mono text-xs italic text-gray-500 float-right">{get_date(goal.deadline)}</span>
                                     </div>
 
-                                    <hr className="w-full text-gray-600 mb-3"></hr>
+                                    <hr className="w-full text-gray-600 mb-1"></hr>
 
                                     <div className="select-none w-12/12 h-12 rounded-2xl border-2 border-gray-500 items-center flex relative">
                                         <span className="w-full text-center absolute text-cyan-400">{goal.percentage + "%"}</span>

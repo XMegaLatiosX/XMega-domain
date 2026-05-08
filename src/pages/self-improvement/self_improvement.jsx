@@ -47,8 +47,8 @@ function Trait({id, on_delete, on_change, name, description, rating}) {
     }, [trait_name, trait_description, trait_rating])
 
     return (
-        <div className="relative flex flex-col bg-gray-800 px-3 pb-16">
-            <hr className="text-gray-600 mb-10"/>
+        <div className="relative flex flex-col bg-gray-800 px-3 pb-20">
+            <hr className="text-gray-600 mb-6"/>
             <a onClick={() => on_delete(id)} className="whitespace-nowrap absolute flex justify-center items-center right-0 top-0 px-2 min-w-8 h-7 bg-red-800 hover:bg-red-900 rounded-bl-sm text-red-300 hover:text-red-500 font-bold transition-all duration-300">remove trait X</a>
             
             <span className="pl-1.5">name:</span>
@@ -463,11 +463,11 @@ function Self_improvement() {
             <NavUpperBar/>
             <Sidebar/>
             <main className="relative w-screen h-[calc(100vh-7rem)] overflow-auto pt-2">
-                <div className="w-full flex flex-col justify-center items-center py-8">
-                    <span className=" text-7xl text-cyan-500 font-bold mb-16">
+                <div className="w-full flex flex-col justify-center items-center py-8 px-2">
+                    <span className="whitespace-nowrap text-7xl text-cyan-500 font-bold mb-16">
                         Skill tracker
                     </span>
-                    <div className="flex flex-col grow max-w-200">
+                    <div className="flex flex-col grow w-full max-w-200">
                         {
                             skills?.length > 0? 
                                 skills.map(skill => {

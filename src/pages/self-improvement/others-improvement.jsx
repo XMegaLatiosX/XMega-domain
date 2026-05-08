@@ -47,7 +47,7 @@ function Skill({id, thumbnail, name, description, current, target, rating}) {
             {thumbnail ? <img src={thumbnail} className="h-16" /> : null}
             <span className="text-4xl font-bold pixel-font">{name}</span>
             <span className="m-4 text-lg">{description}</span>
-            <div className="flex flex-row items-center gap-2">
+            <div className="flex flex-row items-center gap-2 w-full">
 
                 <img src={current} className={`w-16 h-16 ${current? "": "opacity-0"}`}/>
 
@@ -135,7 +135,7 @@ function Others_improvement() {
             <NavUpperBar/>
             <Sidebar/>
             <main className="relative w-screen h-[calc(100vh-7rem)] overflow-auto pt-16">
-                <div className="h-full flex flex-col gap-16 items-center">
+                <div className="h-full flex flex-col gap-16 items-center px-4">
                     <div className="flex flex-row h-32 items-center w-full justify-center gap-4">
                         <img src={star_icon} className="h-full"/>
                         <span className="pixel-font text-7xl text-cyan-500 text-center">{nickname}</span>
