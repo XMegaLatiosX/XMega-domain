@@ -7,6 +7,7 @@ import { supabase } from "../../lib/supabase"
 import star_icon from "../../assets/images/star_icon.png";
 import { v4 } from "uuid";
 import { useNavigate } from "react-router-dom"
+import SearchBar from "../../components/search-bar"
 
 function Skill({}) {
     return (
@@ -404,11 +405,18 @@ function Form({user, skill_id, thumbnail, name, is_public, description, target, 
 
 
 
+async function get_top_skills() {
+    
+}
+
 
 
 function Self_improvement() {
+    const [search_results, set_search_results] = useState(null)
     const [user, set_user] = useState(null)
     const [skills, set_skills] = useState(null)
+    
+    const navigate = useNavigate()
     useEffect(()=> {
         async function get_user() {
             const {data} = await supabase.auth.getUser()
@@ -442,7 +450,6 @@ function Self_improvement() {
         if(user) get_skills()
     }, [user])
 
-    const navigate = useNavigate()
     
     async function delete_skill(id) {
         const {error} = await supabase
@@ -457,12 +464,34 @@ function Self_improvement() {
         console.log("skill removed");
     }
 
+    async function search_skills(input_value) {
+        
+        navigate("/self-improvement/" + input_value)
+    }
+
+    async function display_skills(input_value) {
+        const {data, error} = await supabase.rpc("get_users_by_skill_count")
+
+        if (error) {
+            console.error(error);
+            return
+        }
+        set_search_results(data)
+    }
+
     return (
         <Screen>
             <Header/>
             <NavUpperBar/>
             <Sidebar/>
             <main className="relative w-screen h-[calc(100vh-7rem)] overflow-auto pt-2">
+
+                <div className="absolute right-4 top-4">
+                    <SearchBar placeholder={"Search others improvement..."} onSearch={search_skills} onChanged={display_skills} results={search_results} onInteract={search_skills}></SearchBar>
+                </div>
+
+
+
                 <div className="w-full flex flex-col justify-center items-center py-8 px-2">
                     <span className="whitespace-nowrap text-7xl text-cyan-500 font-bold mb-16">
                         Skill tracker
