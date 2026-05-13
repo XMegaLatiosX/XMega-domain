@@ -489,7 +489,7 @@ function Self_improvement() {
             <main className="relative w-screen h-[calc(100vh-7rem)] overflow-auto pt-2">
 
                 <div className="absolute right-4 top-4">
-                    <SearchBar placeholder={"Search others improvement..."} onSearch={search_skills} onChanged={display_skills} results={search_results} onInteract={search_skills}></SearchBar>
+                    <SearchBar placeholder={"Search others improvement..."} onSearch={search_skills} onChanged={display_skills} results={search_results} onInteract={search_skills} ></SearchBar>
                 </div>
 
 
