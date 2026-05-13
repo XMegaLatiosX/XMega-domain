@@ -13,8 +13,6 @@ function SearchBar({placeholder, onChanged, onSearch, results, onInteract}) {
 
     useEffect(() => {
         function handle_click_outside(event) {
-            console.log("?!");
-            
             if (search_div.current && !search_div.current.contains(event.target)) {
                 set_is_open(false)
             }
@@ -38,13 +36,13 @@ function SearchBar({placeholder, onChanged, onSearch, results, onInteract}) {
     }
 
     return (
-        <div ref={search_div} className="relative">
+        <div ref={search_div} className="relative z-20">
             <form onSubmit={handle_submit} className="relative w-64 h-7.5 border border-cyan-600 rounded-full z-30 bg-gray-950">
-                <input type="text" placeholder={placeholder || "Search..."} className="w-full h-full pl-2 outline-0" onFocus={() => set_is_open(true)} onChange={handle_change}/>
+                <input type="text" placeholder={placeholder || "Search..."} className="w-full h-full pl-2 outline-0" onFocus={handle_change} onChange={handle_change}/>
             </form>
 
             {is_open && results && (
-                <div className="relative -top-3.5 pt-3.5 w-full max-h-32 flex flex-col overflow-auto bg-gray-900">
+                <div className="relative -top-3.5 pt-3.5 w-full max-h-52 flex flex-col overflow-auto bg-gray-900 shadow-md shadow-black">
                     <div className="h-6 flex flex-row justify-between items-center px-2 py-4">
                         <span className="">nickname:</span>
                         <span className="text-right">skills count:</span>

@@ -6,6 +6,7 @@ import Sidebar from "../../components/sidebar";
 import star_icon from "../../assets/images/star_icon.png";
 import { supabase } from "../../lib/supabase";
 import { useEffect, useState } from "react";
+import SearchBar from "../../components/search-bar";
 
 
 async function get_user_skills(owner) {
@@ -101,9 +102,10 @@ function Traits({name, description, rating}) {
 
 function Others_improvement() {
     const {nickname} = useParams()
-
-    var [owner, set_owner] = useState(null)
-    var [skills, set_skills] = useState([])
+    
+    const [search_results, set_search_results] = useState(null)
+    const [owner, set_owner] = useState(null)
+    const [skills, set_skills] = useState([])
 
     useEffect(() => {
         async function get_owner() {
@@ -127,14 +129,35 @@ function Others_improvement() {
 
 
 
-    console.log(skills);
+
+    async function search_skills(input_value) {
+        
+        navigate("/self-improvement/" + input_value)
+    }
+
+    async function display_skills(input_value) {
+        console.log(input_value);
+        
+        const {data, error} = await supabase.rpc("search_users", {search_term: input_value})
+
+        if (error) {
+            console.error(error);
+            return
+        }
+        set_search_results(data)
+    }
     
     return (
         <Screen>
             <Header/>
             <NavUpperBar/>
             <Sidebar/>
-            <main className="relative w-screen h-[calc(100vh-7rem)] overflow-auto pt-16">
+            <main className="relative w-screen h-[calc(100vh-7rem)] overflow-auto pt-20 sm:pt-16">
+                
+                <div className="absolute right-4 top-4">
+                    <SearchBar placeholder={"Search others improvement..."} onSearch={search_skills} onChanged={display_skills} results={search_results} onInteract={search_skills} ></SearchBar>
+                </div>
+
                 <div className="h-full flex flex-col gap-16 items-center px-4">
                     <div className="flex flex-row h-32 items-center w-full justify-center gap-4">
                         <img src={star_icon} className="h-full"/>
