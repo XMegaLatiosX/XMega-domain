@@ -470,7 +470,9 @@ function Self_improvement() {
     }
 
     async function display_skills(input_value) {
-        const {data, error} = await supabase.rpc("get_users_by_skill_count")
+        console.log(input_value);
+        
+        const {data, error} = await supabase.rpc("search_users", {search_term: input_value})
 
         if (error) {
             console.error(error);

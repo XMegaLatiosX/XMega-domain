@@ -20,11 +20,11 @@ function SearchBar({placeholder, onChanged, onSearch, results, onInteract}) {
         set_is_open(true)
         set_value(e.target.value)
 
-        onChanged(value)
+        onChanged(e.target.value)
     }
 
     return (
-        <div className="relative">
+        <div className="relative" onBlur={() => set_is_open(false)}>
             <form onSubmit={handle_submit} className="relative w-64 h-7.5 border border-cyan-600 rounded-full z-30 bg-gray-950">
                 <input type="text" placeholder={placeholder || "Search..."} className="w-full h-full pl-2 outline-0" onFocus={handle_change} onChange={handle_change}/>
             </form>
@@ -38,7 +38,6 @@ function SearchBar({placeholder, onChanged, onSearch, results, onInteract}) {
                     <hr className="text-gray-700 mx-2"/>
                     {
                     results.map(result => {
-                        console.log(result);
                         
                         return (
                             <a className="flex flex-col hover:bg-gray-800 cursor-pointer" onClick={(input_value)=> onInteract(result.nickname)}>
