@@ -110,7 +110,7 @@ function Others_improvement() {
             const {data, error} = await supabase
             .from("profiles")
             .select("*")
-            .eq("nickname_lower", nickname)
+            .eq("nickname_lower", nickname.toLowerCase())
             .single()
     
             if (error) {
