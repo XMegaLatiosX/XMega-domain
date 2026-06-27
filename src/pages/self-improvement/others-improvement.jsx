@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom"
+import { useNavigate, useParams } from "react-router-dom"
 import Screen from "../../components/screen";
 import Header from "../../components/header";
 import NavUpperBar from "../../components/navupperbar";
@@ -101,6 +101,8 @@ function Traits({name, description, rating}) {
 }
 
 function Others_improvement() {
+    const navigate = useNavigate()
+
     const {nickname} = useParams()
     
     const [search_results, set_search_results] = useState(null)
@@ -125,13 +127,12 @@ function Others_improvement() {
             
         }get_owner()
 
-    }, [])
+    }, [nickname])
 
 
 
 
     async function search_skills(input_value) {
-        
         navigate("/self-improvement/" + input_value)
     }
 
