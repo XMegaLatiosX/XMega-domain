@@ -181,12 +181,12 @@ function Form({user, skill_id, thumbnail, name, is_public, description, target, 
             console.error("no account found, create an account on the top right of the header")
             return
         }
-        
+
         const new_skill_id = v4()
         async function insert_skill() {
             const result = await get_public_urls(user.id, new_skill_id, inpt_thumbnail, inpt_target, inpt_current)
             console.log("result", result);
-            
+
             const {thumbnail_public_url, target_public_url, current_public_url} = await get_public_urls(user.id, new_skill_id, inpt_thumbnail, inpt_target, inpt_current)
             console.log("hm..",thumbnail_public_url);
             console.log("hm..",target_public_url);
@@ -217,9 +217,9 @@ function Form({user, skill_id, thumbnail, name, is_public, description, target, 
         async function insert_traits() {
             const valid_traits = traits.filter((trait) => trait.name || trait.description)
             console.log(valid_traits);
-            
+
             if (valid_traits == 0) return
-            
+
             const {data, error} = await supabase
             .from("traits")
             .insert(
