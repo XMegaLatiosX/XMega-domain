@@ -191,7 +191,7 @@ function Form({user, skill_id, thumbnail, name, is_public, description, target, 
             console.log("hm..",thumbnail_public_url);
             console.log("hm..",target_public_url);
             console.log("hm..",current_public_url);
-            
+
             const {data, error} = await supabase
             .from("skills")
             .insert([{
@@ -211,9 +211,9 @@ function Form({user, skill_id, thumbnail, name, is_public, description, target, 
                 return
             }
             console.log("skill created");
-            
+
         }await insert_skill()
-        
+
         async function insert_traits() {
             const valid_traits = traits.filter((trait) => trait.name || trait.description)
             console.log(valid_traits);
@@ -235,9 +235,9 @@ function Form({user, skill_id, thumbnail, name, is_public, description, target, 
                 console.error(error);
                 return
             }
-                
+
         }await insert_traits()
-        
+
     }
     async function update_skill() {
         const {thumbnail_public_url, target_public_url, current_public_url} = await get_public_urls(user.id, skill_id, inpt_thumbnail, inpt_target, inpt_current)
@@ -444,13 +444,13 @@ function Self_improvement() {
                 console.error(error);
                 return
             }
-    
+
             set_skills(data)
         }
         if(user) get_skills()
     }, [user])
 
-    
+
     async function delete_skill(id) {
         const {error} = await supabase
         .from("skills")
@@ -514,7 +514,7 @@ function Self_improvement() {
                     </div>
                 </div>
 
-                
+
             </main>
         </Screen>
 
