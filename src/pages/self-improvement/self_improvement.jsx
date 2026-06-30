@@ -181,17 +181,17 @@ function Form({user, skill_id, thumbnail, name, is_public, description, target, 
             console.error("no account found, create an account on the top right of the header")
             return
         }
-
+        
         const new_skill_id = v4()
         async function insert_skill() {
             const result = await get_public_urls(user.id, new_skill_id, inpt_thumbnail, inpt_target, inpt_current)
             console.log("result", result);
-
+            
             const {thumbnail_public_url, target_public_url, current_public_url} = await get_public_urls(user.id, new_skill_id, inpt_thumbnail, inpt_target, inpt_current)
             console.log("hm..",thumbnail_public_url);
             console.log("hm..",target_public_url);
             console.log("hm..",current_public_url);
-
+            
             const {data, error} = await supabase
             .from("skills")
             .insert([{
@@ -211,15 +211,15 @@ function Form({user, skill_id, thumbnail, name, is_public, description, target, 
                 return
             }
             console.log("skill created");
-
+            
         }await insert_skill()
-
+        
         async function insert_traits() {
             const valid_traits = traits.filter((trait) => trait.name || trait.description)
             console.log(valid_traits);
-
+            
             if (valid_traits == 0) return
-
+            
             const {data, error} = await supabase
             .from("traits")
             .insert(
@@ -235,9 +235,9 @@ function Form({user, skill_id, thumbnail, name, is_public, description, target, 
                 console.error(error);
                 return
             }
-
+                
         }await insert_traits()
-
+        
     }
     async function update_skill() {
         const {thumbnail_public_url, target_public_url, current_public_url} = await get_public_urls(user.id, skill_id, inpt_thumbnail, inpt_target, inpt_current)
@@ -245,13 +245,13 @@ function Form({user, skill_id, thumbnail, name, is_public, description, target, 
         const {error} = await supabase
         .from('skills')
         .update({
-            icon: thumbnail_url || skill_thumbnail_display,
+            icon: skill_thumbnail_display,
             name: inpt_name,
             description: inpt_description,
             self_rating: skill_rating,
             avarage_rating: skill_rating,
-            target_level: target_url || target_level_display,
-            current_level: current_url || current_level_display,
+            target_level: target_level_display,
+            current_level: current_level_display,
             is_public: inpt_public
         })
         .eq("id", skill_id)
@@ -444,13 +444,13 @@ function Self_improvement() {
                 console.error(error);
                 return
             }
-
+    
             set_skills(data)
         }
         if(user) get_skills()
     }, [user])
 
-
+    
     async function delete_skill(id) {
         const {error} = await supabase
         .from("skills")
@@ -480,6 +480,7 @@ function Self_improvement() {
         }
         set_search_results(data)
     }
+
 
     return (
         <Screen>
@@ -514,7 +515,7 @@ function Self_improvement() {
                     </div>
                 </div>
 
-
+                
             </main>
         </Screen>
 
