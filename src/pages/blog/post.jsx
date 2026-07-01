@@ -35,7 +35,7 @@ function Blog_post() {
         }
         fetchPost()
     }, [slug])
-    if (loading) return <span>Loading...</span>
+    
     if (!post) return <Navigate to="/404"/>
 
     

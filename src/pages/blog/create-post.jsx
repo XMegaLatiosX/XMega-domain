@@ -77,7 +77,6 @@ function CreatePost() {
         return () => {listener.subscription.unsubscribe()}
     }, [])
     
-    if (loading) return <span>Loading...</span>
     if (!user?.app_metadata?.is_admin) return <Navigate to="/blog"/>
 
 
