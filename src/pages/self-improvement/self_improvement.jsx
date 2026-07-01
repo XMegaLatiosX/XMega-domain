@@ -228,7 +228,7 @@ function Form({user, skill_id, thumbnail, name, is_public, description, target, 
                     skill_id: new_skill_id,
                     name: trait.name,
                     description: trait.description,
-                    self_rating: trait.rating
+                    self_rating: trait.self_rating
                 }))
             )
             if (error) {
@@ -272,14 +272,14 @@ function Form({user, skill_id, thumbnail, name, is_public, description, target, 
                 skill_id : skill_id,
                 name: trait.name,
                 description: trait.description,
-                self_rating: trait.rating
+                self_rating: trait.self_rating
             }))
         )
         if (trait_update_error) {
             console.error(trait_update_error);
             return
         }
-        console.log("traits updated aswell");
+        console.log("traits updated aswell: ", valid_traits);
         
     }
 
@@ -432,7 +432,6 @@ function Self_improvement() {
 
     useEffect(() => {
         async function get_skills() {
-            console.log(user);
             
             const {data, error} = await supabase
             .from("skills")
