@@ -2,6 +2,7 @@ import { Link } from "react-router-dom"
 import github_icon from "../assets/images/github.png"
 import discord_icon from "../assets/images/discord.png"
 import instagram_icon from "../assets/images/instagram.png"
+import soundcloud_icon from "../assets/images/soundcloud.png"
 
 function Sidebar() {
     return (
@@ -23,6 +24,7 @@ function Sidebar() {
                 <a href="https://github.com/XMegaLatiosX" target="_blank">          <img className="h-8" src={github_icon}/></a>
                 <a href="https://discord.gg/KJ398CH2Th" target="_blank">            <img className="h-8" src={discord_icon}/></a>
                 <a href="https://www.instagram.com/xmega_latiosx/#" target="_blank"> <img className="h-8" src={instagram_icon}/></a>
+                <a href="https://soundcloud.com/xmega_latiosx" target="_blank"> <img className="h-8" src={soundcloud_icon}/></a>
             </div>
 
             {/* <iframe src="https://docs.google.com/forms/d/e/1FAIpQLSfZDQMxMEjC9BdKI-uSBisRYu-w1N3wKu9aZirxOFS0li5Q3g/viewform?usp=publish-editor" className="w-lg h-140"></iframe> GOOGLE FORM EMBED*/}
