@@ -3,6 +3,7 @@ import Header from '../components/header'
 import NavUpperBar from '../components/navupperbar'
 import Sidebar from '../components/sidebar'
 import { useEffect, useRef } from 'react'
+import tidal from "../assets/audios/KORAII - TIDAL GIRL.mp3";
 
 function About() {
     const audioRef = useRef(null)
@@ -29,7 +30,7 @@ function About() {
     }, [])
     return (
         <Screen>
-            <audio ref={audioRef} src="/src/assets/audios/KORAII - TIDAL GIRL.mp3"></audio>
+            <audio ref={audioRef} src={tidal}></audio>
             <Header></Header>
             <NavUpperBar></NavUpperBar>
             <Sidebar></Sidebar>
