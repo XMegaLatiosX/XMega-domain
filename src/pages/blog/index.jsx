@@ -87,7 +87,7 @@ function Blog() {
                             title={post.title} 
                             summary={post.summary} 
                             date={post.created_at} 
-                            to={`/blog/${post.slug}`}/>
+                            to={`/blog/${post.url_slug}`}/>
                         })
                     }
                 </div>

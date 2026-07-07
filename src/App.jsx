@@ -24,7 +24,7 @@ function App() {
             <Route path="/about" element={<About/>} />
             <Route path="/blog" element={<Blog/>} />
             <Route path="/blog/create-post" element={<CreatePost/>} />
-            <Route path="/blog/:slug" element={<Blog_post/>} />
+            <Route path="/blog/:url_slug" element={<Blog_post/>} />
             <Route path="/gallery" element={<GalleryHome/>} />
             <Route path="/gallery/:category" element={<Gallery/>}>
                 <Route path=":media_name" element={<Modal/>} />

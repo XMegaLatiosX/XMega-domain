@@ -80,7 +80,7 @@ function CreatePost() {
     if (!user?.app_metadata?.is_admin) return <Navigate to="/blog"/>
 
 
-    
+
     async function handle_submit(e) {
         e.preventDefault()
 
@@ -160,6 +160,13 @@ function CreatePost() {
         const description_input = document.getElementById('description_input').value
         const title_input = document.getElementById('title_input').value
         const name_input = document.getElementById('name_input').value
+        const url_name = name_input
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/['"!?.,\/\\#$%\^&\*;:{}=\-_`~()]/g, '')
+            .trim()
+            .replace(/\s+/g, '-');
 
 
 
@@ -170,6 +177,7 @@ function CreatePost() {
             {
                 id: post_id,
                 slug: name_input,
+                url_slug: url_name,
                 title: title_input,
                 icon: icon_public_url,
                 thumbnail: thumbnail_public_url,

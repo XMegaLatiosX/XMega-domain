@@ -35,6 +35,7 @@ function About() {
             <NavUpperBar></NavUpperBar>
             <Sidebar></Sidebar>
             <main className="w-screen h-[calc(100vh-7rem)] overflow-auto p-2">
+                <a className="fixed bottom-6 right-6 border border-cyan-600 px-2 py-1 rounded-md">play</a>
                 
                 <div className="relative flex flex-col justify-center items-center pt-[25vh] text-center">
                     <h1 className="font-bold text-cyan-400">

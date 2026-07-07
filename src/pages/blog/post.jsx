@@ -9,19 +9,19 @@ import { useEffect, useState } from "react"
 import { supabase } from "../../lib/supabase"
 
 function Blog_post() {
-    const { slug } = useParams()
+    const { url_slug } = useParams()
     const [post, setPost] = useState(null)
     const [loading, setLoading] = useState(true)
     
+    console.log(url_slug);
     
     useEffect(() => {
-        if (!slug) return <Navigate to="/404"/>
 
         async function fetchPost() {
             const { data, error } = await supabase
             .from("blog_posts")
             .select("*")
-            .eq("slug", slug)
+            .eq("url_slug", url_slug)
             .single()
 
             if (error) {
@@ -34,11 +34,10 @@ function Blog_post() {
             setLoading(false)
         }
         fetchPost()
-    }, [slug])
+    }, [url_slug])
     
-    if (!post) return <Navigate to="/404"/>
-
-    
+    if (loading) return <Screen></Screen>
+    if (!post) return <Navigate to="/404" replace />
     return (
         <Screen>
             <Header/>
@@ -47,7 +46,7 @@ function Blog_post() {
             <main className="w-screen h-[calc(100vh-7rem)] overflow-auto pt-2">
                 <div className="w-full flex justify-center py-8">
                     <div className="bg-gray-900 py-4 px-[2%] max-w-200 flex-col flex items-center">
-                        <h1 className="text-white text-md w-3/4 text-center">{post.slug}</h1>
+                        <h1 className="text-white text-md w-3/4 text-center">{post.url_slug}</h1>
                         <div className="flex h-8 items-center justify-center gap-2 mt-4 mb-2">
                             <img className="h-8" src={post.icon || "/media/images/star_icon.png"}></img>
                             <h2 className="font-mono font-bold italic text-sm">#{post.title}</h2>
