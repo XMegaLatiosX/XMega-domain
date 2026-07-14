@@ -42,8 +42,8 @@ function Scroll_images() {
                         style={{
                             left: `${Math.random() * 120 - 50}%`,
                             bottom: `${Math.random() * 120 - 128}%`,
-                            animationDelay: `${Math.random() * 20}s`,
-                            animationDuration: `60s`,
+                            animationDelay: `${Math.random() * 32}s`,
+                            animationDuration: `90s`,
                             transform: `scale(${0.5 + Math.random()}) rotate(${Math.random()*360}deg)`
                         }}
                     />
