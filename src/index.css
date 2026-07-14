@@ -39,11 +39,11 @@
   }
   paint-order: stroke fill;
   font-family: 'Pixel_font', sans-serif;
-  animation: beat 0.5357s infinite;
+  animation: beat 0.428s infinite;
 }
 .pixel_logo_gif {
   @apply w-1/2 sm:w-1/3 translate-y-2;
-  animation: beat 0.5357s infinite;
+  animation: beat 0.428s infinite;
   image-rendering: pixelated;
 }
 .pixel_logo_gif::after {
@@ -57,7 +57,7 @@
   transform: scale(1);
   opacity: 0;
 
-  animation: pulseRing 0.5357s ease-out infinite;
+  animation: pulseRing 0.428s ease-out infinite;
 
   pointer-events: none;
   z-index: -1;
@@ -180,4 +180,41 @@ body {
       transform: scale(1.8);
       opacity: 0;
     }
+}
+
+
+.background-images{
+    position:absolute;
+    inset:0;
+    overflow:hidden;
+    pointer-events:none;
+}
+.floating-image{
+    @apply w-64 h-36 opacity-50 rotate-45;
+    position:absolute;
+    image-rendering:pixelated;
+    animation-name: drift;
+    animation-timing-function:linear;
+    animation-iteration-count:infinite;
+}
+
+.beat1 {
+    animation: beat .428s infinite;
+}
+
+.beat2 {
+    animation: beat .428s infinite;
+    animation-delay: .214s; /* metade do tempo */
+}
+
+@keyframes drift{
+
+    from{
+        transform: translate(0,0)
+    }
+
+    to{
+        transform: translate(0,-150vh)
+    }
+
 }
