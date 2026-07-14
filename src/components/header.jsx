@@ -270,7 +270,7 @@ function Header() {
                 </Link>
             </div>
 
-            <img className="pixel-art absolute left-1/2 -translate-x-1/2 h-2/3 max-w-3/8" src={soundwaveplaceholder}/>
+            {/* <img className="pixel-art absolute left-1/2 -translate-x-1/2 h-2/3 max-w-3/8" src={soundwaveplaceholder}/> */}
 
             <div className="flex flex-row">
                 <div className="h-full w-16 flex items-center">
