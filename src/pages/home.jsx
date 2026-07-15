@@ -59,7 +59,6 @@ export default function Home() {
             <main className="relative w-screen h-[calc(100vh-7rem)] overflow-hidden">
                 
                 <div className="flex w-full absolute h-full top-[calc(50vh-10rem)] sm:top-[calc(50vh-4.1rem)] -translate-y-1/2 items-center justify-center">
-                    {/* (show_first <Scroll_images_first></Scroll_images_first>) */}
                     <Scroll_images></Scroll_images>
                     <img src={star_icon_gif} className=" select-none pixel_logo_gif"/>
                     <h1 className="main-logo">XMega LatiosX</h1>

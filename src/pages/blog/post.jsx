@@ -1,4 +1,4 @@
-import { Navigate, useParams } from "react-router-dom"
+import { Link, Navigate, useParams } from "react-router-dom"
 import Header from "../../components/header"
 import NavUpperBar from "../../components/navupperbar"
 import Screen from "../../components/screen"
@@ -12,8 +12,15 @@ function Blog_post() {
     const { url_slug } = useParams()
     const [post, setPost] = useState(null)
     const [loading, setLoading] = useState(true)
+    const [user, set_user] = useState(null)
     
-    console.log(url_slug);
+    useEffect(() => {
+        async function getUser(params) {
+            const {data} = await supabase.auth.getUser()
+            set_user(data.user)
+        }
+        getUser()
+    }, [])
     
     useEffect(() => {
 
@@ -73,6 +80,7 @@ function Blog_post() {
                     </div>
 
                 </div>
+                {user?.app_metadata?.is_admin? <Link className="fixed right-8 bottom-4" to={(`/blog/create-post/`+ post.id)} > <button className="p-2 border border-cyan-600 rounded-md"> Edit post </button> </Link>: null}
             </main>
         </Screen>
     )
