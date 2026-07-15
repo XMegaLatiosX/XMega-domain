@@ -194,8 +194,9 @@ body {
     position:absolute;
     image-rendering:pixelated;
     animation-name: drift;
-    animation-timing-function:linear;
-    animation-iteration-count:infinite;
+    animation-timing-function: linear;
+    animation-duration: 30s;
+    animation-iteration-count: infinite;
 }
 
 .beat1 {
@@ -210,11 +211,11 @@ body {
 @keyframes drift{
 
     from{
-        transform: translate(0,0)
+        transform: translateY(0)
     }
 
     to{
-        transform: translate(0,-150vh)
+        transform: translateY(-256vh)
     }
 
 }

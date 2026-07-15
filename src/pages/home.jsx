@@ -24,11 +24,11 @@ import img14 from "../assets/images/scroll images/skill track.webp"
 import img15 from "../assets/images/scroll images/tower defense.webp"
 import img16 from "../assets/images/scroll images/404.webp"
 import img17 from "../assets/images/scroll images/blog.webp"
+import { useEffect, useState } from 'react'
 
 const scroll_images = [img1, img2, img3, img4, img5, img6, img7, img8, img9, img10, img11, img12, img13, img14, img15, img16, img17]
 
 function Scroll_images() {
-        
     return (
         <div className="background-images">
             {Array.from({ length: 30 }).map((_, i) => {
@@ -40,11 +40,9 @@ function Scroll_images() {
                         src={image}
                         className="floating-image"
                         style={{
-                            left: `${Math.random() * 120 - 50}%`,
-                            bottom: `${Math.random() * 120 - 128}%`,
-                            animationDelay: `${Math.random() * 32}s`,
-                            animationDuration: `90s`,
-                            transform: `scale(${0.5 + Math.random()}) rotate(${Math.random()*360}deg)`
+                            left: `${Math.random() * 128 - 55}%`,
+                            bottom: `${Math.random() * 128 - 160}%`,
+                            animationDelay: `${Math.random() * 16}s`,
                         }}
                     />
                 )
@@ -61,6 +59,7 @@ export default function Home() {
             <main className="relative w-screen h-[calc(100vh-7rem)] overflow-hidden">
                 
                 <div className="flex w-full absolute h-full top-[calc(50vh-10rem)] sm:top-[calc(50vh-4.1rem)] -translate-y-1/2 items-center justify-center">
+                    {/* (show_first <Scroll_images_first></Scroll_images_first>) */}
                     <Scroll_images></Scroll_images>
                     <img src={star_icon_gif} className=" select-none pixel_logo_gif"/>
                     <h1 className="main-logo">XMega LatiosX</h1>
