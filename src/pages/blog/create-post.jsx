@@ -13,29 +13,119 @@ import { v4 } from "uuid"
 function Content_input_div({id, on_delete, on_change}) {
     const [ select_value, set_select_value ] = useState("text")
     const [ image, set_image ] = useState(null)
+    const [ audio, set_audio ] = useState(null)
+    const [ video, set_video ] = useState(null)
+    const [ embed, set_embed ] = useState(null)
     
 
-    const change_image = (e) => {
-        const file = e.target.files[0]
-        if(file) {
-            const temporary_url = URL.createObjectURL(file)
-            set_image(temporary_url)
-            on_change(temporary_url, "img")
+    const update_content = (value, type) => {
+        if (type === "text") {
+            on_change(value, type)
+            return
+        }
+
+        if (type === "embed") {
+            set_embed(value)
+            on_change(value, type)
+            return
+        }
+
+
+        const file = value.target.files[0]
+        if (!file) return
+        const url = URL.createObjectURL(file)
+
+        switch(type){
+            case "image":
+                set_image(url)
+                break
+
+            case "audio":
+                set_audio(url)
+                break
+
+            case "video":
+                set_video(url)
+                break
+        }
+
+        on_change(file, type)
+
+    }
+    
+    function Render_content() {
+        switch (select_value) {
+            case "text":
+                return <textarea id={id} onChange={(e) => update_content(e.target.value, "text")} className="p-0.5 pl-2 max-h-64 min-h-64 w-full bg-gray-950 border border-cyan-600 mb-16 rounded-sm" placeholder="Content"/>
+                
+            case "image":
+                return (
+                    <div className="relative min-w-64 w-fit max-w-full min-h-64">
+                        <input type="file" id={id} onChange={(e) => update_content(e, "image")} className={`absolute h-64 w-full border rounded-sm bg-gray-950 border-cyan-600 ${image? "opacity-0" : "opacity-100"}`} placeholder="thumbnail: /media/pixelarts/altar contest.png"/>
+                        <img src={image} className={`h-full rounded-sm`}/>
+                    </div>
+                )
+                
+            case "audio":
+                return (
+                    <div className="relative min-w-64 w-fit max-w-full z-50 flex flex-col">
+                        <input id={id} type="file" accept="audio/*" onChange={(e) => update_content(e, "audio")} className={` border rounded-sm bg-gray-950 border-cyan-600 z-10`}/>
+                        <audio src={audio} className={` rounded-sm`} controls></audio>
+                    </div>
+                )
+                
+            case "video":
+                return (
+                    <div className="relative min-w-64 w-fit max-w-full min-h-64 flex flex-col">
+                        <input id={id} type="file" accept="video/*" onChange={(e) => update_content(e, "video")} className={`h-64 w-full border rounded-sm bg-gray-950 border-cyan-600 `}/>
+                        <video src={video} className={`h-full rounded-sm `} controls></video>
+                    </div>
+                )
+                
+            case "embed":
+                return (
+                    <div className="relative min-w-64 w-fit max-w-full min-h-64 flex">
+                        <textarea placeholder="Embed code..." id={id} onChange={(e) => update_content(e.target.value, "embed")} value={embed} className="p-0.5 pl-2 max-h-64 min-h-64 min-w-64 bg-gray-950 border border-cyan-600 rounded-sm" placeholder="Content"/>
+                            <p className="scale-75 max-w-12 relative bottom-8"  dangerouslySetInnerHTML={{__html: embed}}></p>
+                            {/* YouTube
+                            Twitch
+                            Spotify
+                            SoundCloud
+                            itch.io
+                            Google Maps
+                            if (url.endsWith(".png")) {
+                                // imagem
+                            } 
+                            if (url.includes("twitch.tv/?")) {
+                                // imagem
+                                https://player.twitch.tv/?channel=xmegalatiosx&parent=localhost
+                            }
+
+                            if (url.includes("youtube")) {
+                                // vídeo
+                            }
+
+                            if (url.includes("youtu.be")) {
+                                // vídeo
+                            }
+
+                            if (url.includes("soundcloud")) {
+                                // player
+                            } */}
+                    </div>
+                )
         }
     }
-
     return (
-        <div name={id} className="relative flex flex-row mb-4 w-full h-64">
+        <div name={id} className="relative flex flex-row mb-12 w-full h-64">
             <select name="content_type" className="p-0.5 pl-2 bg-gray-950 border border-cyan-600 rounded-sm max-h-7.5 mr-2" onChange={(e) => set_select_value(e.target.value)}>
                 <option value="text">text</option>
                 <option value="image">img</option>
+                <option value="audio">audio</option>
+                <option value="video">video</option>
+                <option value="embed">embed_content</option>
             </select>
-
-            <textarea onChange={(e) => on_change(e.target.value, "text")} className={`p-0.5 pl-2 max-h-64 min-h-64 w-full bg-gray-950 border border-cyan-600 mb-16 rounded-sm ${select_value === "text" ? "block" : "hidden"}`} placeholder="Content"/>
-            <div className={`relative min-w-64 w-fit max-w-full min-h-64 ${select_value === "image" ? "block" : "hidden"}`}>
-                <input type="file" id={id} onChange={change_image} className={`absolute h-64 w-full border rounded-sm bg-gray-950 border-cyan-600 ${image? "opacity-0" : "opacity-100"}`} placeholder="thumbnail: /media/pixelarts/altar contest.png"/>
-                <img src={image} className={`h-full rounded-sm`}/>
-            </div>
+            {Render_content()}
             <a onClick={() => on_delete(id)} className="absolute flex justify-center items-center right-0 w-8 h-8 bg-amber-950 border border-b-amber-950 border-l-amber-950 border-t border-r hover:border-l-[rgb(83,91,243)] hover:border-b-[rgb(83,91,243)] hover:text-amber-50 rounded-bl-sm rounded-tr-sm transition-all duration-300">X</a>
             
         </div>
@@ -77,7 +167,7 @@ function CreatePost() {
         return () => {listener.subscription.unsubscribe()}
     }, [])
     
-    if (!user?.app_metadata?.is_admin) return <Navigate to="/blog"/>
+    if (!loading && !user?.app_metadata?.is_admin) return <Navigate to="/blog"/>
 
 
 
@@ -89,17 +179,20 @@ function CreatePost() {
 
         // read every content, passing just type and value, if its an image, upload to bucket and set bucket publicurl as value
         for (const c of content_list) {
-            if (c.type !== "text") {
+
+            if (c.type != "text" && c.type != "embed") {
+                console.log(c.type);
+                
                 const input = document.getElementById(c.id)
+                const file = input.files[0]
+                const ext = file.name.split('.').pop()
 
                 if (input.files.length === 0) continue
 
-                const file = input.files[0]
-                const ext = file.name.split('.').pop()
                 const file_path = `${post_id}/${c.id}.${ext}`
 
                 const {error: img_upload_error} = await supabase.storage
-                .from("blog_posts_images")
+                .from("blog_media")
                 .upload(file_path, file, {upsert: true})
 
                 if (img_upload_error) {
@@ -110,13 +203,14 @@ function CreatePost() {
                 }
 
                 const {data} = supabase.storage
-                .from("blog_posts_images")
+                .from("blog_media")
                 .getPublicUrl(file_path)
 
                 c.value = data.publicUrl
             }
             formated_content.push({type: c.type, value:c.value})
         }
+
         console.log("result: ", formated_content);
 
 
@@ -124,7 +218,7 @@ function CreatePost() {
         const thumbnail_ext = thumbnail_file.name.split('.').pop()
         const thumbnail_file_path = `${post_id}/thumbnail.${thumbnail_ext}`
         const {error: thumbnail_upload_error} = await supabase.storage
-        .from("blog_posts_images")
+        .from("blog_media")
         .upload(thumbnail_file_path, thumbnail_file, {upsert: true})
 
         if (thumbnail_upload_error) {
@@ -133,7 +227,7 @@ function CreatePost() {
         }
 
         const {data: thumbnail_data_url} = supabase.storage
-        .from("blog_posts_images")
+        .from("blog_media")
         .getPublicUrl(thumbnail_file_path)
 
         const thumbnail_public_url = thumbnail_data_url.publicUrl
@@ -143,7 +237,7 @@ function CreatePost() {
         const icon_ext = icon_file.name.split('.').pop()
         const icon_file_path = `${post_id}/icon.${icon_ext}`
         const {error: icon_upload_error} = await supabase.storage
-        .from("blog_posts_images")
+        .from("blog_media")
         .upload(icon_file_path, icon_file, {upsert: true})
 
         if (icon_upload_error) {
@@ -152,7 +246,7 @@ function CreatePost() {
         }
 
         const {data: icon_data_url} = supabase.storage
-        .from("blog_posts_images")
+        .from("blog_media")
         .getPublicUrl(icon_file_path)
 
         const icon_public_url = icon_data_url.publicUrl

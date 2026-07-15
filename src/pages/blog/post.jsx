@@ -58,10 +58,12 @@ function Blog_post() {
                         {
                             post.content.map((module, index) => {
                                 const components = {
-                                    "break": <hr className="w-full h-1 mt-4 mb-8 text-gray-600"></hr>,
-                                    "text": <p className="text-center font-bold" key={index}>{module.value}</p>,
-                                    "img": <img key={index} src={module.value}></img>,
-                                    "video": <video src={module.value} controls></video>
+                                    // "break": <hr className="w-full h-1 mt-4 mb-8 text-gray-600"></hr>,
+                                    "text": <p className="text-center font-bold" key={index} dangerouslySetInnerHTML={{__html: module.value}}></p>,
+                                    "embed": <p className="text-center font-bold" key={index}  dangerouslySetInnerHTML={{__html: module.value}}></p>,
+                                    "image": <img key={index} src={module.value}></img>,
+                                    "video": <video key={index} src={module.value} controls></video>,
+                                    "audio": <audio key={index} src={module.value} controls></audio>
 
                                 }
                                 return components[module.type] || null
