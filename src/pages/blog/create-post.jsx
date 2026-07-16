@@ -421,7 +421,7 @@ function CreatePost() {
         }
         await delete_post_files()
 
-        // navigate("/blog")
+        navigate("/blog")
         return
     }
 
