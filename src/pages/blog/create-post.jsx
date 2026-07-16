@@ -3,20 +3,25 @@ import NavUpperBar from "../../components/navupperbar"
 import Screen from "../../components/screen"
 import Sidebar from "../../components/sidebar"
 
-import { Navigate, useNavigate } from "react-router-dom"
+import { Navigate, useNavigate, useParams } from "react-router-dom"
 import { useEffect, useRef, useState } from "react"
 import { supabase } from "../../lib/supabase"
 import { v4 } from "uuid"
 
 
+import star_icon from "../../assets/images/star_icon.png"
 
-function Content_input_div({id, on_delete, on_change}) {
-    const [ select_value, set_select_value ] = useState("text")
-    const [ image, set_image ] = useState(null)
-    const [ audio, set_audio ] = useState(null)
-    const [ video, set_video ] = useState(null)
-    const [ embed, set_embed ] = useState(null)
+function Content_input_div({id, content_value, on_delete, on_change}) {
+    const [ select_value, set_select_value ] = useState(content_value.type? content_value.type :"text")
+    const [ image, set_image ] = useState(content_value.type === "image"? content_value.value:null)
+    const [ audio, set_audio ] = useState(content_value.type === "audio"? content_value.value:null)
+    const [ video, set_video ] = useState(content_value.type === "video"? content_value.value:null)
+    const [ embed, set_embed ] = useState(content_value.type === "embed"? content_value.value:null)
     
+    useEffect(() => {
+        console.log("CONTEUDO Q CHEGOU:", content_value);
+        
+    }, [])
 
     const update_content = (value, type) => {
         if (type === "text") {
@@ -134,9 +139,13 @@ function Content_input_div({id, on_delete, on_change}) {
 
 
 function CreatePost() {
-
+    const { post_id } = useParams()
+    
     const [icon_img, set_icon_img] = useState(null)
     const [thumbnail_img, set_thumbnail_img] = useState(null)
+    const [name, set_name] = useState("")
+    const [title, set_title] = useState("")
+    const [summary, set_summary] = useState("")
 
 
     const [content_list, set_content_list] = useState([])
@@ -147,6 +156,7 @@ function CreatePost() {
     const [loading, setLoading] = useState(true)
     useEffect(() => {
         async function getUser() {
+            
             const { data } = await supabase.auth.getUser()
             setUser(data.user)
             setLoading(false)
@@ -167,6 +177,38 @@ function CreatePost() {
         return () => {listener.subscription.unsubscribe()}
     }, [])
     
+    useEffect(() => {
+        async function load_post() {
+            console.log("tem post, id: ", post_id);
+
+            const {data: post_data, error} = await supabase
+            .from("blog_posts")
+            .select("*")
+            .eq("id", post_id)
+            .single()
+            
+            if (error) {
+                console.error(error);
+                return
+            }
+            
+            if (!post_data) return
+            
+            set_icon_img(post_data.icon)
+            set_thumbnail_img(post_data.thumbnail)
+            set_name(post_data.slug)
+            set_title(post_data.title)
+            set_summary(post_data.summary)
+            const loaded_content = post_data.content.map((c, value) => ({
+                id: crypto.randomUUID(), ...c
+            }))
+            set_content_list(loaded_content)
+
+        }
+        if (post_id) load_post()
+    }, [])
+
+
     if (!loading && !user?.app_metadata?.is_admin) return <Navigate to="/blog"/>
 
 
@@ -214,46 +256,53 @@ function CreatePost() {
         console.log("result: ", formated_content);
 
 
-        const thumbnail_file = document.getElementById('thumbnail_input').files[0]
-        const thumbnail_ext = thumbnail_file.name.split('.').pop()
-        const thumbnail_file_path = `${post_id}/thumbnail.${thumbnail_ext}`
-        const {error: thumbnail_upload_error} = await supabase.storage
-        .from("blog_media")
-        .upload(thumbnail_file_path, thumbnail_file, {upsert: true})
+        var thumbnail_public_url
+        if (document.getElementById('thumbnail_input').files[0]) {
+            thumbnail_file = document.getElementById('thumbnail_input').files[0]
+            const thumbnail_ext = thumbnail_file.name.split('.').pop()
+            const thumbnail_file_path = `${post_id}/thumbnail.${thumbnail_ext}`
+            const {error: thumbnail_upload_error} = await supabase.storage
+            .from("blog_media")
+            .upload(thumbnail_file_path, thumbnail_file, {upsert: true})
 
-        if (thumbnail_upload_error) {
-            console.log("thumbnail upload error down here: ");
-            console.error(thumbnail_upload_error);
-        }
+            if (thumbnail_upload_error) {
+                console.log("thumbnail upload error down here: ");
+                console.error(thumbnail_upload_error);
+            }
 
-        const {data: thumbnail_data_url} = supabase.storage
-        .from("blog_media")
-        .getPublicUrl(thumbnail_file_path)
+            const {data: thumbnail_data_url} = supabase.storage
+            .from("blog_media")
+            .getPublicUrl(thumbnail_file_path)
 
-        const thumbnail_public_url = thumbnail_data_url.publicUrl
+            thumbnail_public_url = thumbnail_data_url.publicUrl
+        }else if (thumbnail_img) thumbnail_public_url = thumbnail_img
+
+        var icon_public_url = star_icon
+        if (document.getElementById('icon_input').files[0]) {
+            const icon_file = document.getElementById('icon_input').files[0]
+            const icon_ext = icon_file.name.split('.').pop()
+            const icon_file_path = `${post_id}/icon.${icon_ext}`
+            const {error: icon_upload_error} = await supabase.storage
+            .from("blog_media")
+            .upload(icon_file_path, icon_file, {upsert: true})
+    
+            if (icon_upload_error) {
+                console.log("icon upload error down here: ");
+                console.error(icon_upload_error);
+            }
+
+            const {data: icon_data_url} = supabase.storage
+            .from("blog_media")
+            .getPublicUrl(icon_file_path)
+
+            icon_public_url = icon_data_url.publicUrl
+        }else if(icon_img) icon_public_url = icon_img
 
 
-        const icon_file = document.getElementById('icon_input').files[0]
-        const icon_ext = icon_file.name.split('.').pop()
-        const icon_file_path = `${post_id}/icon.${icon_ext}`
-        const {error: icon_upload_error} = await supabase.storage
-        .from("blog_media")
-        .upload(icon_file_path, icon_file, {upsert: true})
 
-        if (icon_upload_error) {
-            console.log("icon upload error down here: ");
-            console.error(icon_upload_error);
-        }
-
-        const {data: icon_data_url} = supabase.storage
-        .from("blog_media")
-        .getPublicUrl(icon_file_path)
-
-        const icon_public_url = icon_data_url.publicUrl
-
-        const description_input = document.getElementById('description_input').value
-        const title_input = document.getElementById('title_input').value
-        const name_input = document.getElementById('name_input').value
+        const description_input = summary
+        const title_input = title
+        const name_input = name
         const url_name = name_input
             .toLowerCase()
             .normalize('NFD')
@@ -264,25 +313,48 @@ function CreatePost() {
 
 
 
-
-        const {data, error} = await supabase
-        .from("blog_posts")
-        .insert([
-            {
-                id: post_id,
-                slug: name_input,
-                url_slug: url_name,
-                title: title_input,
-                icon: icon_public_url,
-                thumbnail: thumbnail_public_url,
-                summary: description_input,
-                content: formated_content
+        if (post_id) {
+            const {data, error: post_submit_error} = await supabase
+            .from("blog_posts")
+            .update([
+                {
+                    id: post_id,
+                    slug: name_input,
+                    url_slug: url_name,
+                    title: title_input,
+                    icon: icon_public_url,
+                    thumbnail: thumbnail_public_url,
+                    summary: description_input,
+                    content: formated_content
+                }
+            ])
+            if (post_submit_error) {
+                console.error(post_submit_error);
+                return
             }
-        ])
-        if (error) {
-            console.error(error);
-            return
+
+        }else {
+            const {data, error: post_submit_error} = await supabase
+            .from("blog_posts")
+            .insert([
+                {
+                    id: post_id,
+                    slug: name_input,
+                    url_slug: url_name,
+                    title: title_input,
+                    icon: icon_public_url,
+                    thumbnail: thumbnail_public_url,
+                    summary: description_input,
+                    content: formated_content
+                }
+            ])
+            if (post_submit_error) {
+                console.error(post_submit_error);
+                return
+            }
+
         }
+        
         console.log("Post criado!")
 
         navigate("/blog")
@@ -342,8 +414,8 @@ function CreatePost() {
                                 <input type="file" id="icon_input" className="p-0.5 pl-2 w-7.5 bg-gray-950 border border-cyan-600 mb-4 rounded-sm opacity-0" onChange={change_icon_img}/>
                             </div>
 
-                            <input type="text" id="name_input" className="p-0.5 pl-2 w-full bg-gray-950 border border-cyan-600 mb-4 rounded-sm" placeholder="Name"/>
-                            <input type="text" id="title_input" className="p-0.5 pl-2 w-full bg-gray-950 border border-cyan-600 mb-4 rounded-sm" placeholder="Title"/>
+                            <input type="text" id="name_input" className="p-0.5 pl-2 w-full bg-gray-950 border border-cyan-600 mb-4 rounded-sm" placeholder="Name" value={name} onChange={(e) => set_name(e.target.value)}/>
+                            <input type="text" id="title_input" className="p-0.5 pl-2 w-full bg-gray-950 border border-cyan-600 mb-4 rounded-sm" placeholder="Title" value={title} onChange={(e) => set_title(e.target.value)}/>
 
                         </div>
 
@@ -352,18 +424,18 @@ function CreatePost() {
                             <input type="file" id="thumbnail_input" className={`absolute h-64 w-full rounded-sm bg-gray-950 border border-cyan-600 ${thumbnail_img? "opacity-0" : "opacity-100"}`} onChange={change_thumbnail_img}/>
                         </div>
 
-                        <textarea type="text" id="description_input" className="p-0.5 pl-2 min-h-32 bg-gray-950 border border-cyan-600 mb-4 rounded-sm" placeholder="summary"/>
+                        <textarea type="text" id="description_input" className="p-0.5 pl-2 min-h-32 bg-gray-950 border border-cyan-600 mb-4 rounded-sm" placeholder="summary" value={summary} onChange={(e) => set_summary(e.target.value)}/>
 
                         {
                             content_list.map((content) => {
-                                return <Content_input_div id={content.id} key={content.id} on_delete={remove_content_block} on_change={(val, type) => update_content_block(content.id, val, type)}></Content_input_div>
+                                return <Content_input_div id={content.id} key={content.id} on_delete={remove_content_block} content_value={content} on_change={(val, type) => update_content_block(content.id, val, type)}></Content_input_div>
                             })
                         }
 
 
                         <a onClick={add_content_block} className="h-12 w-12 rounded-md font-bold text-3xl flex justify-center items-center pb-1.5 select-none text-cyan-600 bg-gray-950 border border-transparent hover:border-[rgb(83,91,243)] transition-all duration-300">+</a>
 
-                        <button type="submit" className="fixed bottom-12 right-4 bg-gray-950 sm:bottom-14 sm:right-16 border-2 h-8 w-32 p-0 rounded-md border-cyan-950  hover:border-[rgb(83,91,243)] "><span className="w-full h-full select-none text-md flex items-center justify-center text-cyan-600">Create Post</span></button>
+                        <button type="submit" className="fixed bottom-12 right-4 bg-gray-950 sm:bottom-14 sm:right-16 border-2 h-8 w-32 p-0 rounded-md border-cyan-950  hover:border-[rgb(83,91,243)] "><span className="w-full h-full select-none text-md flex items-center justify-center text-cyan-600">{post_id? "Edit Post" : "Create Post"}</span></button>
                     </form>
 
                 </div>
