@@ -149,10 +149,36 @@ function AddProject() {
 
 
     if (!loading && !user?.app_metadata?.is_admin) return <Navigate to="/project"/>
+
     useEffect(() => {
-        if (!old_project_id) {
-            add_content_block()
+        async function load_post() {
+            console.log("existing project, id: ", old_project_id);
+
+            const {data: project_data, error} = await supabase
+            .from("projects")
+            .select("*")
+            .eq("id", old_project_id)
+            .single()
+            
+            if (error) {
+                console.error(error);
+                return
+            }
+            
+            if (!project_data) return
+            set_status(project_data.status)
+            set_title(project_data.title)
+            set_description(project_data.description)
+            const loaded_content = project_data.content.map((c, value) => ({
+                id: crypto.randomUUID(), ...c
+            }))
+            set_content_list(loaded_content)
+
         }
+        
+    
+        if(old_project_id) load_post() 
+        else add_content_block()
     }, [])
 
     async function handle_submit(e) {
