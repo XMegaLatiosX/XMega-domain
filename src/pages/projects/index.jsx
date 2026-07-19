@@ -17,6 +17,13 @@ function ProjectCard({title, description, last_update, status, url}) {
         completed: "bg-green-700 border-green-500 text-green-300",
         suspended: "bg-red-700 border-red-500 text-red-300",
     }
+    const status_name = {
+        planning: "Planning",
+        active: "In Progress",
+        paused: "Paused",
+        completed: "Completed",
+        suspended: "Suspended",
+    }
     return (
         <Link to={url} className="rounded-3xl bg-gray-900 px-4 pt-3 pb-2 mb-6 border border-gray-600 flex-col">
 
@@ -30,7 +37,7 @@ function ProjectCard({title, description, last_update, status, url}) {
                         <span className="font-bold text-sm italic text-gray-500 pb-0.5">status:</span>
                         <span className={`select-none w-24 text-center rounded-2xl border-2 pb-0.5 items-center flex justify-center text-xs font-semibold
                             ${status_colors[status]
-                            }`}>{status}</span>
+                            }`}>{status_name[status]}</span>
                     </div>
                     
 
