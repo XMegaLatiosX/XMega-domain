@@ -14,6 +14,7 @@ import Self_improvement from './pages/self-improvement/self_improvement'
 import Others_improvement from './pages/self-improvement/others-improvement'
 import Projects from './pages/projects'
 import AddProject from './pages/projects/add-project'
+import Project from './pages/projects/project'
 
 function App() {
 
@@ -35,7 +36,7 @@ function App() {
             </Route>
 
             <Route path="/projects" element={<Projects/>} />
-            <Route path="/projects/:project_url_title" element={<Projects/>} />
+            <Route path="/projects/:project_url_title" element={<Project/>} />
             <Route path="/projects/add_project" element={<AddProject/>} >
                 <Route path="/projects/add_project/:project_id"></Route>
             </Route>
