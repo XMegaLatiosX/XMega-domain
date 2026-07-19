@@ -17,8 +17,7 @@ function NavUpperBar() {
             <UpperBarButton to="/blog" label="blog"></UpperBarButton>
             <UpperBarButton to="/music" label="music"></UpperBarButton>
             <UpperBarButton to="/gallery" label="gallery"></UpperBarButton>
-            <UpperBarButton to="/programming" label="programming"></UpperBarButton>
-            <UpperBarButton to="/progress" label="progress"></UpperBarButton>
+            <UpperBarButton to="/projects" label="projects"></UpperBarButton>
             <UpperBarButton to="/self-improvement" label="self improvement"></UpperBarButton>
         </div>
     )

@@ -10,7 +10,7 @@ function Sidebar() {
             <a className="sidebar_topic" href="https://discord.gg/KJ398CH2Th" target="_blank"> <span className="sidebar_topic_text">Join our discord!</span> </a>
             
             <Link className="sidebar_topic" to="/blog/"> <span className="sidebar_topic_text">What is new?</span> </Link>
-            <Link className="sidebar_topic" to="/progress"> <span className="sidebar_topic_text">Progress</span> </Link>
+            <Link className="sidebar_topic" to="/project"> <span className="sidebar_topic_text">Projects</span> </Link>
             <Link className="sidebar_topic" to="/about"> <span className="sidebar_topic_text">About</span> </Link>
             
             <Link className="sidebar_topic" to="/settings"> <span className="sidebar_topic_text">Settings</span> </Link>

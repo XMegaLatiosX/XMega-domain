@@ -1,10 +1,26 @@
-import Header from "../components/header"
-import NavUpperBar from "../components/navupperbar"
-import Screen from "../components/screen"
-import Sidebar from "../components/sidebar"
-import goals from "/src/data/goals.json"
+import Header from "../../components/header"
+import NavUpperBar from "../../components/navupperbar"
+import Screen from "../../components/screen"
+import Sidebar from "../../components/sidebar"
 
-function Progress() {
+function Projects() {
+//     var goals = [
+//     {
+//         "name": "Finish this site",
+//         "description": "Complete every first goal to this site for now",
+//         "date": "2026-02-18",
+//         "deadline": "2026-03-31",
+//         "percentage": "15"
+//     },
+//     {
+//         "name": "Set up the discord server",
+//         "description": "Finish making a good quality server",
+//         "date": "2026-03-05",
+//         "deadline": "2026-03-12",
+//         "percentage": "5"
+//     }
+// ]
+
     return (
         <Screen>
             <Header/>
@@ -13,7 +29,7 @@ function Progress() {
             <main className="relative w-screen h-[calc(100vh-7rem)] overflow-auto pt-2 px-2">
                 <div className="w-full flex justify-center py-8">
                     <div className="flex flex-col grow max-w-200">
-                        {
+                        {/* {{
                             goals.map(goal => {
                                 function get_date(date) {
                                     return (""+ date.replace('-', '/').replace('-', '/'))
@@ -42,7 +58,7 @@ function Progress() {
                                     </div>
 
                                 </div>
-                        })}
+                        })} } */}
 
                     </div>
                 </div>
@@ -54,4 +70,4 @@ function Progress() {
     )
 }
 
-export default Progress
+export default Projects
