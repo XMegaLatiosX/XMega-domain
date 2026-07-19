@@ -21,10 +21,6 @@ function Content_input_div({id, content_value, on_delete, on_change}) {
     useEffect(() => {
         console.log("CONTEUDO Q CHEGOU:", content_value);
         set_selected_type(content_value.type)
-        // if(content_value.type === "image") set_image(content_value.value)
-        // if(content_value.type === "audio") set_audio(content_value.value)
-        // if(content_value.type === "video") set_video(content_value.value)
-        // if(content_value.type === "embed") set_embed(content_value.value)
     }, [content_value.type, content_value.value])
 
     const update_content = (value, type) => {
