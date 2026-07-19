@@ -35,8 +35,8 @@ function App() {
             </Route>
 
             <Route path="/projects" element={<Projects/>} />
-            <Route path="/projects/AddProject" element={<AddProject/>} >
-                <Route path="/projects/AddProject/:project_id"></Route>
+            <Route path="/projects/add_project" element={<AddProject/>} >
+                <Route path="/projects/add_project/:project_id"></Route>
             </Route>
 
             <Route path="/self-improvement" element={<Self_improvement/>} />

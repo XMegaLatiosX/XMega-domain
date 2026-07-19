@@ -34,6 +34,7 @@ function Blog() {
     const [posts, set_posts] = useState([])
 
     const [user, set_user] = useState(null)
+    const [loading, set_loading] = useState(true)
     useEffect(() => {
         async function fetchPosts() {
             const { data, error } = await supabase
@@ -49,7 +50,7 @@ function Blog() {
             set_posts(data)
         }
         fetchPosts()
-        
+        set_loading(false)
         const { data: listener } = supabase.auth.onAuthStateChange(
             (event, session) => {
                 set_user(session?.user ?? null)
@@ -76,7 +77,7 @@ function Blog() {
             <Sidebar/>
             <main className="w-screen h-[calc(100vh-7rem)] overflow-auto pt-2">
                 <div className="w-full justify-items-center items-center flex-col">
-                    {posts.length === 0 && (<p>ops, looks like there is no posts yet D=</p>)}
+                    {(posts.length === 0 && !loading) && (<p>ops, looks like there is no posts yet D=</p>)}
                     {
                         posts.map(post => {
                             return <Post 
