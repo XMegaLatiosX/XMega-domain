@@ -148,7 +148,7 @@ function AddProject() {
     }, [])
 
 
-    if (!loading && !user?.app_metadata?.is_admin) return <Navigate to="/project"/>
+    if (!loading && !user?.app_metadata?.is_admin) return <Navigate to="/projects"/>
 
     useEffect(() => {
         async function load_post() {
@@ -355,7 +355,7 @@ function AddProject() {
         await supabase.from("projects")
         .delete()
         .eq("id", old_project_id)
-        navigate("/project")
+        navigate("/projects")
     }
 
     return (
