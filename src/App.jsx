@@ -15,11 +15,16 @@ import Others_improvement from './pages/self-improvement/others-improvement'
 import Projects from './pages/projects'
 import AddProject from './pages/projects/add-project'
 import Project from './pages/projects/project'
+import MusicProvider from './music/MusicProvider'
+import MusicDock from './music/MusicDock'
+import BeatProvider from './music/BeatProvider'
 
 function App() {
 
   return (
     <BrowserRouter>
+      <MusicProvider>
+        <BeatProvider>
         <Routes>
             <Route path="/" element={<Home/>} />
             <Route path="/about" element={<About/>} />
@@ -48,6 +53,9 @@ function App() {
             <Route path="/feedback" element={<Feedback/>} />
             <Route path="*" element={<Notfound/>} />
         </Routes>
+        <MusicDock/>
+        </BeatProvider>
+      </MusicProvider>
     </BrowserRouter>
     )
 }

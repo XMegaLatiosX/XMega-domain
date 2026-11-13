@@ -90,7 +90,7 @@ function Content_input_div({id, content_value, on_delete, on_change}) {
             case "embed":
                 return (
                     <div className="relative min-w-64 w-fit max-w-full min-h-64 flex">
-                        <textarea placeholder="Embed code..." id={id} onChange={(e) => update_content(e.target.value, "embed")} value={embed} className="p-0.5 pl-2 max-h-64 min-h-64 min-w-64 bg-gray-950 border border-cyan-600 rounded-sm" placeholder="Content"/>
+                        <textarea placeholder="Embed code..." id={id} onChange={(e) => update_content(e.target.value, "embed")} value={embed} className="p-0.5 pl-2 max-h-64 min-h-64 min-w-64 bg-gray-950 border border-cyan-600 rounded-sm"/>
                             <p className="scale-75 max-w-12 relative bottom-8"  dangerouslySetInnerHTML={{__html: embed}}></p>
                             {/* YouTube
                             Twitch

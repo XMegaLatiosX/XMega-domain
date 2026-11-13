@@ -4,6 +4,10 @@
   user-select: none;
 }
 
+input, textarea {
+  user-select: text;
+}
+
 @font-face {
   font-family: 'Pixel_font';
   src: url('/fonts/ITGridbitDemo-Regular.otf') format('opentype');
@@ -39,11 +43,11 @@
   }
   paint-order: stroke fill;
   font-family: 'Pixel_font', sans-serif;
-  animation: beat 0.428s infinite;
+  animation: beat var(--beat, 0.4167s) infinite;
 }
 .pixel_logo_gif {
   @apply w-1/2 sm:w-1/3 translate-y-2;
-  animation: beat 0.428s infinite;
+  animation: beat var(--beat, 0.4167s) infinite;
   image-rendering: pixelated;
 }
 .pixel_logo_gif::after {
@@ -57,7 +61,7 @@
   transform: scale(1);
   opacity: 0;
 
-  animation: pulseRing 0.428s ease-out infinite;
+  animation: pulseRing var(--beat, 0.4167s) ease-out infinite;
 
   pointer-events: none;
   z-index: -1;
@@ -158,9 +162,9 @@ body {
 @keyframes beat {
     0% { transform: scale(1);}
 
-    35% { transform: scale(1.01);}
-    50% { transform: scale(1.1);}
-    65% { transform: scale(1.01);}
+    35% { transform: scale(calc(1 + (var(--beat-peak, 1.04) - 1) * 0.1));}
+    50% { transform: scale(var(--beat-peak, 1.04));}
+    65% { transform: scale(calc(1 + (var(--beat-peak, 1.04) - 1) * 0.1));}
 
     100% { transform: scale(1);}
 }
@@ -183,39 +187,66 @@ body {
 }
 
 
-.background-images{
-    position:absolute;
-    inset:0;
-    overflow:hidden;
-    pointer-events:none;
+/* ---------- Background wall (see components/background-wall.jsx) ---------- */
+.bg-wall {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
 }
-.floating-image{
-    @apply w-64 h-36 opacity-50 rotate-45;
-    position:absolute;
-    image-rendering:pixelated;
-    animation-name: drift;
+/* each image moves along the diagonal, bottom-left to top-right; the start point, distance and
+   speed are set per image by the component. The tilt is on the <img>, not here, so it does not
+   rotate the direction of travel. */
+.bg-drift {
+    position: absolute;
+    left: calc(var(--w) / -2);
+    top: calc(var(--w) * -0.28125);
+    width: var(--w);
+    translate: var(--ox, 0px) var(--oy, 0px); /* small sideways offset per image, separate from the animated transform */
+    will-change: transform;
+    animation-name: bg-diagonal;
     animation-timing-function: linear;
-    animation-duration: 30s;
     animation-iteration-count: infinite;
+}
+.bg-img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    rotate: 45deg;
+    opacity: 0.5;
+    image-rendering: pixelated;
+}
+
+@keyframes bg-diagonal {
+    from { transform: translate(var(--x0), var(--y0)); }
+    to   { transform: translate(calc(var(--x0) + var(--dx)), calc(var(--y0) + var(--dy))); }
+}
+
+/* "step" mode: the component writes the transform itself, on the beat */
+.bg-step .bg-drift {
+    animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .bg-drift { animation-play-state: paused; }
+}
+
+/* one beat for the whole site: 144 BPM until the beat provider sets --beat (see music/BeatProvider.jsx) */
+:root {
+    --beat: 0.4167s;
+    --beat-peak: 1.04;
 }
 
 .beat1 {
-    animation: beat .428s infinite;
+    animation: beat var(--beat) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .main-logo, .pixel_logo_gif, .pixel_logo_gif::after, .beat1, .beat2 { animation: none; }
 }
 
 .beat2 {
-    animation: beat .428s infinite;
-    animation-delay: .214s; /* metade do tempo */
-}
-
-@keyframes drift{
-
-    from{
-        transform: translateY(0)
-    }
-
-    to{
-        transform: translateY(-256vh)
-    }
-
+    animation: beat var(--beat) infinite;
+    animation-delay: calc(var(--beat) / 2); /* metade do tempo */
 }
