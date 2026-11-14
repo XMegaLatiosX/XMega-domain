@@ -113,6 +113,7 @@ function buildLayout(width, height, seed) {
             items.push({
                 key: `${j}-${k}`,
                 lane: j,
+                cell: (j + k) % 2, // a chessboard: neighbours in a column and in the next column differ
                 src: IMAGES[(counter * 7 + j * 3) % IMAGES.length],
                 x0,
                 y0,
@@ -126,7 +127,7 @@ function buildLayout(width, height, seed) {
         }
     }
 
-    return { w, h, items, path_length, dx: path_length / Math.SQRT2, dy: -path_length / Math.SQRT2 }
+    return { w, h, items, lane_pitch, lane_count, path_length, dx: path_length / Math.SQRT2, dy: -path_length / Math.SQRT2 }
 }
 
 function screen_size() {
@@ -211,15 +212,16 @@ export default function BackgroundWall({ mode = "drift", bpm = 144 }) {
     }, [active_mode, bpm, layout])
 
     return (
-        <div ref={wall} className={`bg-wall${active_mode === "step" ? " bg-step" : ""}`} aria-hidden="true" style={{ "--w": `${layout.w}px`, "--dx": `${layout.dx}px`, "--dy": `${layout.dy}px` }}>
+        <div ref={wall} className={`bg-wall${active_mode === "step" ? " bg-step" : ""}`} aria-hidden="true" data-pitch={layout.lane_pitch} data-lanes={layout.lane_count} style={{ "--w": `${layout.w}px`, "--dx": `${layout.dx}px`, "--dy": `${layout.dy}px` }}>
             {layout.items.map((item, i) => (
                 <div
                     className="bg-drift"
+                    data-j={item.lane}
                     key={item.key}
                     ref={(el) => (nodes.current[i] = el)}
                     style={{ "--x0": `${item.x0}px`, "--y0": `${item.y0}px`, "--ox": `${item.ox}px`, "--oy": `${item.oy}px`, animationDuration: `${item.duration}s`, animationDelay: `${item.delay}s` }}
                 >
-                    <img className="bg-img" src={item.src} alt="" draggable={false} decoding="async" />
+                    <img className="bg-img" src={item.src} alt="" draggable={false} decoding="async" data-lane={item.lane % 2} data-cell={item.cell} />
                 </div>
             ))}
         </div>

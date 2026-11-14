@@ -50,21 +50,16 @@ input, textarea {
   animation: beat var(--beat, 0.4167s) infinite;
   image-rendering: pixelated;
 }
-.pixel_logo_gif::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-
+/* One outline ring per beat, behind the logo: the badge's border spreading out, slowly, and fading.
+   An <img> cannot have pseudo-elements, so the ring has its own element (see pages/home.jsx), sized and placed
+   like the badge. It starts thick and thins out as it spreads. */
+.beat-rings {
+  @apply absolute w-1/2 sm:w-1/3 aspect-square translate-y-2 pointer-events-none;
   border-radius: 50%;
-  background: rgba(0,255,255,.35);
-
-  transform: scale(1);
+  border: 14px solid rgba(120, 255, 255, 1);
+  box-shadow: 0 0 12px rgba(0, 255, 255, .7);
   opacity: 0;
-
   animation: pulseRing var(--beat, 0.4167s) ease-out infinite;
-
-  pointer-events: none;
-  z-index: -1;
 }
 
 
@@ -160,30 +155,15 @@ body {
 
 
 @keyframes beat {
-    0% { transform: scale(1);}
-
-    35% { transform: scale(calc(1 + (var(--beat-peak, 1.04) - 1) * 0.1));}
-    50% { transform: scale(var(--beat-peak, 1.04));}
-    65% { transform: scale(calc(1 + (var(--beat-peak, 1.04) - 1) * 0.1));}
-
-    100% { transform: scale(1);}
+    /* the hit lands exactly on the beat (0%), then it relaxes: a kick, not a swell */
+    0% { transform: scale(var(--beat-peak, 1.1)); filter: brightness(1.5); animation-timing-function: cubic-bezier(0.2, 0.7, 0.3, 1);}
+    60% { transform: scale(1); filter: brightness(1);}
+    100% { transform: scale(1); filter: brightness(1);}
 }
 
 @keyframes pulseRing {
-    0% {
-      transform: scale(.8);
-      opacity: .8;
-    }
-
-    30% {
-      transform: scale(1.8);
-      opacity: 0;
-    }
-
-    100% {
-      transform: scale(1.8);
-      opacity: 0;
-    }
+    0%   { transform: scale(1);   opacity: .9; border-width: 14px; }
+    100% { transform: scale(1.7); opacity: 0;  border-width: 3px;  }
 }
 
 
@@ -202,7 +182,9 @@ body {
     left: calc(var(--w) / -2);
     top: calc(var(--w) * -0.28125);
     width: var(--w);
-    translate: var(--ox, 0px) var(--oy, 0px); /* small sideways offset per image, separate from the animated transform */
+    /* small sideways offset per image, separate from the animated transform; --lx/--ly slide whole columns (the "slide" kick look) */
+    translate: calc(var(--ox, 0px) + var(--lx, 0px)) calc(var(--oy, 0px) + var(--ly, 0px));
+    transition: translate 240ms cubic-bezier(0.2, 0.9, 0.3, 1);
     will-change: transform;
     animation-name: bg-diagonal;
     animation-timing-function: linear;
@@ -216,6 +198,8 @@ body {
     rotate: 45deg;
     opacity: 0.5;
     image-rendering: pixelated;
+    /* the drum reactions move these three (components/reactions-layer.jsx) */
+    transition: scale 160ms cubic-bezier(0.2, 0.9, 0.3, 1), translate 160ms cubic-bezier(0.2, 0.9, 0.3, 1), opacity 160ms ease-out;
 }
 
 @keyframes bg-diagonal {
@@ -235,7 +219,7 @@ body {
 /* one beat for the whole site: 144 BPM until the beat provider sets --beat (see music/BeatProvider.jsx) */
 :root {
     --beat: 0.4167s;
-    --beat-peak: 1.04;
+    --beat-peak: 1.1;
 }
 
 .beat1 {
@@ -243,10 +227,94 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .main-logo, .pixel_logo_gif, .pixel_logo_gif::after, .beat1, .beat2 { animation: none; }
+    .main-logo, .pixel_logo_gif, .beat-rings, .beat1, .beat2 { animation: none; }
 }
+
+/* while the beat is being analyzed the pulse is held still, so it is clear that something is changing */
+:root[data-beat="analyzing"] .main-logo,
+:root[data-beat="analyzing"] .pixel_logo_gif,
+:root[data-beat="analyzing"] .beat-rings,
+:root[data-beat="analyzing"] .beat1,
+:root[data-beat="analyzing"] .beat2 { animation: none; }
 
 .beat2 {
     animation: beat var(--beat) infinite;
     animation-delay: calc(var(--beat) / 2); /* metade do tempo */
+}
+
+
+/* ---------- Drum reactions (see components/reactions-layer.jsx) ---------- */
+.fx-layer {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+.fx-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: rgba(120, 255, 255, 0.95);
+    box-shadow: 0 0 12px rgba(0, 255, 255, 0.8);
+    opacity: 0;
+}
+.fx-laser {
+    position: absolute;
+    left: -10%;
+    width: 120%;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #ffffff 35%, #7ffcff 65%, transparent);
+    box-shadow: 0 0 14px 3px rgba(0, 255, 255, 0.8);
+    opacity: 0;
+}
+.fx-pixel {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    opacity: 0;
+    image-rendering: pixelated;
+}
+.fx-stream, .fx-floor {
+    position: absolute;
+    width: 9px;
+    height: 9px;
+    opacity: 0;
+    image-rendering: pixelated;
+}
+.fx-stream { box-shadow: 0 0 8px 1px rgba(0, 255, 255, 0.8); }
+.fx-floor { box-shadow: 0 0 6px rgba(0, 255, 255, 0.7); }
+/* thin laser beams behind the wall of images (BackBeams in components/reactions-layer.jsx) */
+.fx-beams {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+/* the thick one: dark blue with cyan edges, for sound that holds */
+.fx-thick {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 110px;
+    height: 170%;
+    margin-left: -55px;
+    transform-origin: 50% 100%;
+    background: linear-gradient(to top, rgba(8, 30, 120, 0.95), rgba(10, 40, 150, 0.7) 55%, rgba(10, 40, 150, 0.15));
+    border-left: 4px solid rgba(0, 255, 255, 0.9);
+    border-right: 4px solid rgba(0, 255, 255, 0.9);
+    box-shadow: 0 0 26px 4px rgba(0, 220, 255, 0.45);
+    opacity: 0;
+}
+.fx-beam {
+    position: absolute;
+    bottom: 0;
+    width: 2px;
+    height: 150%;
+    background: linear-gradient(to top, rgba(255, 255, 255, 0.95), rgba(0, 255, 255, 0.6) 40%, transparent);
+    box-shadow: 0 0 10px 1px rgba(0, 255, 255, 0.6);
+    opacity: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+    .fx-layer, .fx-beams { display: none; }
 }

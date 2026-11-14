@@ -23,8 +23,8 @@ function App() {
 
   return (
     <BrowserRouter>
-      <MusicProvider>
-        <BeatProvider>
+      <BeatProvider>
+        <MusicProvider>
         <Routes>
             <Route path="/" element={<Home/>} />
             <Route path="/about" element={<About/>} />
@@ -54,8 +54,8 @@ function App() {
             <Route path="*" element={<Notfound/>} />
         </Routes>
         <MusicDock/>
-        </BeatProvider>
-      </MusicProvider>
+        </MusicProvider>
+      </BeatProvider>
     </BrowserRouter>
     )
 }

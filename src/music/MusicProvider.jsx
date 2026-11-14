@@ -4,6 +4,7 @@ import { MusicContext } from "./context"
 import { parseInput } from "./parse"
 import { resolveSoundCloudShort, searchYouTube, spotifyTitle } from "./search"
 import { loadScript } from "./loadScript"
+import { useBeat } from "./useBeat"
 
 // Both players stay mounted for the whole session, so the music keeps going when the visitor
 // changes page. They are only faded/slid out of view (never display:none), and the box is
@@ -24,6 +25,9 @@ export default function MusicProvider({ children }) {
     const index_ref = useRef(-1)
     const volume_ref = useRef(80)
     const handlers = useRef({})
+    const beat = useBeat()
+    const beat_ref = useRef(beat) // always the latest, so the callbacks below can stay stable
+    useEffect(() => { beat_ref.current = beat })
 
     const [playing, set_playing] = useState(false)
     const [title, set_title] = useState("")
@@ -114,6 +118,7 @@ export default function MusicProvider({ children }) {
     }, [])
 
     const play_item = useCallback(async (item) => {
+        beat_ref.current.track_changed() // a new song: the beat is listened for again
         await stop_other(item.source)
         active.current = item.source
         set_source(item.source)
@@ -152,6 +157,7 @@ export default function MusicProvider({ children }) {
         set_message("")
         const parsed = parseInput(text)
         if (!parsed) return
+        beat_ref.current.ask_once() // still inside the click/Enter that started this: the first time, ask to hear the tab
         set_loading(true)
         try {
             let items = []

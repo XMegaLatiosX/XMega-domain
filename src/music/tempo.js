@@ -68,6 +68,13 @@ export class OnsetTracker {
         this.re = new Float32Array(FFT_SIZE)
         this.im = new Float32Array(FFT_SIZE)
         this.previous = new Float32Array(BANDS)
+        // how much each part of the spectrum grew in the latest frame: [low, body, mid, crack, air]
+        // (kick drums live in "low", snares in "body" + "crack", hi-hats in "air"). on_frame(groups) is called for every frame.
+        this.groups = new Float32Array(5)
+        // and how loud each of those parts is now (the average of its bands' levels, 0 = silence, about 1 = loud)
+        this.levels = new Float32Array(5)
+        this.group_size = new Uint8Array(5)
+        this.on_frame = null
 
         // which FFT bins go in which band (log-spaced)
         const bin_hz = sample_rate / FFT_SIZE
@@ -78,6 +85,12 @@ export class OnsetTracker {
             this.edges.push(Math.max(1, Math.round(hz / bin_hz)))
         }
         for (let b = 1; b <= BANDS; b++) if (this.edges[b] <= this.edges[b - 1]) this.edges[b] = this.edges[b - 1] + 1
+        this.group_of = new Uint8Array(BANDS)
+        for (let b = 0; b < BANDS; b++) {
+            const centre = Math.sqrt(this.edges[b] * this.edges[b + 1]) * bin_hz
+            this.group_of[b] = centre < 160 ? 0 : centre < 450 ? 1 : centre < 1000 ? 2 : centre < 5000 ? 3 : 4
+            this.group_size[this.group_of[b]]++
+        }
     }
 
     // feed mono samples; returns the new onset-strength values (usually 0 to a few per call)
@@ -103,16 +116,26 @@ export class OnsetTracker {
         }
         this.fft(re, im)
         let flux = 0
+        const groups = this.groups
+        const levels = this.levels
+        groups.fill(0)
+        levels.fill(0)
         for (let b = 0; b < BANDS; b++) {
             let sum = 0
             const from = edges[b]
             const to = edges[b + 1]
             for (let k = from; k < to; k++) sum += Math.hypot(re[k], im[k])
             const level = Math.log1p(40 * (sum / (to - from)) / FFT_SIZE * 8)
+            levels[this.group_of[b]] += level
             const rise = level - previous[b]
-            if (rise > 0) flux += rise
+            if (rise > 0) {
+                flux += rise
+                groups[this.group_of[b]] += rise
+            }
             previous[b] = level
         }
+        for (let g = 0; g < 5; g++) if (this.group_size[g]) levels[g] /= this.group_size[g]
+        if (this.on_frame) this.on_frame(groups, levels)
         return flux
     }
 }
@@ -169,7 +192,7 @@ function best_phase(env, period) {
 //   confidence 0..1, how much clearer the winner is than the average candidate
 //   phase_s    seconds from the START of the given onsets to the first beat on the grid
 //   beat_s     seconds between beats
-export function estimateTempo(onsets, rate, { min_bpm = 70, max_bpm = 165 } = {}) {
+export function estimateTempo(onsets, rate, { min_bpm = 70, max_bpm = 190, prior_center = 120, prior_octaves = 0.9, prefer_faster = 0.6 } = {}) {
     const n = onsets.length
     if (n < rate * 5) return null
     const env = clean(onsets, rate)
@@ -199,12 +222,20 @@ export function estimateTempo(onsets, rate, { min_bpm = 70, max_bpm = 165 } = {}
     for (let bpm = min_bpm; bpm <= max_bpm; bpm += 0.25) {
         const lag = (rate * 60) / bpm
         let score = at(lag) + 0.5 * at(lag * 2) + 0.25 * at(lag * 4) + 0.35 * at(lag * 1.5) + 0.25 * at(lag * 3)
-        const octaves = Math.log2(bpm / 120)
-        score *= Math.exp(-0.5 * (octaves / 0.9) ** 2)
-        candidates.push({ bpm, score })
+        const raw = score
+        const octaves = Math.log2(bpm / prior_center)
+        score *= Math.exp(-0.5 * (octaves / prior_octaves) ** 2)
+        candidates.push({ bpm, score, raw })
     }
-    candidates.sort((a, b) => b.score - a.score)
-    const top = candidates[0]
+    const by_score = candidates.slice().sort((a, b) => b.score - a.score)
+    let top = by_score[0]
+    // When the same pattern also fits at twice the tempo, take the faster one: pulsing on every
+    // half-beat lands on the beats AND the off-beats, and a half-speed pulse would miss the off-beats.
+    const doubled_bpm = top.bpm * 2
+    if (doubled_bpm <= max_bpm) {
+        const twin = candidates.reduce((best, c) => (Math.abs(c.bpm - doubled_bpm) < Math.abs(best.bpm - doubled_bpm) ? c : best))
+        if (twin.raw >= prefer_faster * top.raw) top = twin
+    }
     if (!(top.score > 0)) return null
     const mean = candidates.reduce((s, c) => s + c.score, 0) / candidates.length
 
@@ -237,10 +268,14 @@ export function estimateTempo(onsets, rate, { min_bpm = 70, max_bpm = 165 } = {}
 // the beat grid came out 41 ms early, so it is pushed forward by that. Real tracks will differ a little;
 // the UI should offer a small manual nudge.
 const ONSET_DELAY_S = -0.041
+const PHASE_FOLLOW_S = 0.03 // a phase this close to the grid is drift: follow it a little
+const PHASE_AGREE_S = 0.03 // two phase disagreements this close count as the same one
+const PHASE_ADOPT_AFTER = 5 // a phase that disagrees with the grid is only accepted after this many estimates in a row
+const RELATED_RATIOS = [2, 0.5, 1.5, 2 / 3, 4 / 3, 0.75]
 const DOUBLE_BELOW_BPM = 80 // below this, assume half-time and double it (70 -> 140)
 
 export class TempoFollower {
-    constructor(sample_rate, { window_s = 10, every_s = 1, lock_after = 2, switch_after = 3 } = {}) {
+    constructor(sample_rate, { window_s = 10, every_s = 1, lock_after = 2, switch_after = 4 } = {}) {
         this.tracker = new OnsetTracker(sample_rate)
         this.rate = this.tracker.rate
         this.window = Math.round(window_s * this.rate)
@@ -251,6 +286,7 @@ export class TempoFollower {
         this.frames = 0
         this.next_estimate_at = Math.round(6 * this.rate)
         this.pending = null
+        this.phase_pending = null
         this.state = null
     }
 
@@ -296,14 +332,37 @@ export class TempoFollower {
         }
         const current = this.state
         if (close(candidate.bpm, current.bpm)) {
-            // same tempo: smooth it and re-align the beats to the newest window
-            const bpm = 0.6 * current.bpm + 0.4 * candidate.bpm
-            this.state = { bpm, confidence: candidate.confidence, beat_s: 60 / bpm, anchor_s: candidate.anchor_s }
+            // Same tempo. The beat grid is a flywheel: it keeps turning at its tempo and only gives way slowly.
+            //  - the tempo moves slowly toward the new estimate
+            //  - a phase that disagrees by a little is followed a little (drift), by a lot it is ignored, unless the
+            //    same disagreement shows up estimate after estimate (the music really moved). So one odd kick, a bass
+            //    note off the grid or a break does not drag the beat along; the old grid is kept through it.
+            const bpm = 0.85 * current.bpm + 0.15 * candidate.bpm
+            const beat = 60 / bpm
+            let anchor = current.anchor_s + Math.floor((this.time - current.anchor_s) / current.beat_s) * current.beat_s
+            const wrap = (value) => value - Math.round(value / beat) * beat
+            const error = wrap(candidate.anchor_s - anchor)
+            if (Math.abs(error) < PHASE_FOLLOW_S) {
+                anchor += 0.25 * error
+                this.phase_pending = null
+            } else if (this.phase_pending && Math.abs(wrap(error - this.phase_pending.error)) < PHASE_AGREE_S) {
+                this.phase_pending.count++
+                this.phase_pending.error = error
+                if (this.phase_pending.count >= PHASE_ADOPT_AFTER) {
+                    anchor += error
+                    this.phase_pending = null
+                }
+            } else {
+                this.phase_pending = { error, count: 1 }
+            }
+            this.state = { bpm, confidence: candidate.confidence, beat_s: beat, anchor_s: anchor }
             this.pending = null
             return
         }
         const ratio = candidate.bpm / current.bpm
-        if (Math.abs(ratio - 2) < 0.04 || Math.abs(ratio - 0.5) < 0.02) return // octave flip: ignore
+        // The same pattern read at another speed (octave flips, and syncopation making a 3:2 or 4:3 reading) is not a
+        // new tempo: the old tempo is kept, and the pulse keeps going.
+        if (RELATED_RATIOS.some((related) => Math.abs(ratio / related - 1) < 0.03)) return
         if (this.pending && close(this.pending.bpm, candidate.bpm)) this.pending.count++
         else this.pending = { bpm: candidate.bpm, count: 1 }
         if (this.pending.count >= this.switch_after) {
