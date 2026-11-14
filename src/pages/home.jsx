@@ -10,6 +10,7 @@ import HomeSearch from '../music/HomeSearch'
 
 import BackgroundWall from '../components/background-wall'
 import ReactionsLayer, { BackBeams } from '../components/reactions-layer'
+import TapAnywhere from '../components/tap-anywhere'
 
 export default function Home() {
     return (
@@ -25,6 +26,8 @@ export default function Home() {
                 {/* reacts to the drums: lines, lasers and changes in the wall (see the file for the list of looks) */}
                 <ReactionsLayer></ReactionsLayer>
 
+                {/* on a touch screen, tapping the page to the beat sets the tempo */}
+                <TapAnywhere></TapAnywhere>
                 <HomeSearch></HomeSearch>
                 
                 <div className="flex w-full absolute h-full top-[calc(50vh-10rem)] sm:top-[calc(50vh-4.1rem)] -translate-y-1/2 items-center justify-center">
