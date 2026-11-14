@@ -74,6 +74,8 @@ export class OnsetTracker {
         // and how loud each of those parts is now (the average of its bands' levels, 0 = silence, about 1 = loud)
         this.levels = new Float32Array(5)
         this.group_size = new Uint8Array(5)
+        // where the weight of the sound sits above the kick range, 0 = low, 1 = high (a rough "tone" of what is playing)
+        this.tone = 0.5
         this.on_frame = null
 
         // which FFT bins go in which band (log-spaced)
@@ -120,6 +122,8 @@ export class OnsetTracker {
         const levels = this.levels
         groups.fill(0)
         levels.fill(0)
+        let weight = 0
+        let centre = 0
         for (let b = 0; b < BANDS; b++) {
             let sum = 0
             const from = edges[b]
@@ -127,6 +131,10 @@ export class OnsetTracker {
             for (let k = from; k < to; k++) sum += Math.hypot(re[k], im[k])
             const level = Math.log1p(40 * (sum / (to - from)) / FFT_SIZE * 8)
             levels[this.group_of[b]] += level
+            if (this.group_of[b] > 0) {
+                weight += level * level
+                centre += level * level * b
+            }
             const rise = level - previous[b]
             if (rise > 0) {
                 flux += rise
@@ -135,6 +143,7 @@ export class OnsetTracker {
             previous[b] = level
         }
         for (let g = 0; g < 5; g++) if (this.group_size[g]) levels[g] /= this.group_size[g]
+        if (weight > 0.05) this.tone = centre / weight / (BANDS - 1)
         if (this.on_frame) this.on_frame(groups, levels)
         return flux
     }

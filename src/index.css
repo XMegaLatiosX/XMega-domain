@@ -45,6 +45,11 @@ input, textarea {
   font-family: 'Pixel_font', sans-serif;
   animation: beat var(--beat, 0.4167s) infinite;
 }
+/* the title with its colours swapped (see title_swap in components/reactions-layer.jsx): black letters, cyan edge */
+.main-logo.is-inverted {
+  color: #000000;
+  -webkit-text-stroke-color: #00ffff;
+}
 .pixel_logo_gif {
   @apply w-1/2 sm:w-1/3 translate-y-2;
   animation: beat var(--beat, 0.4167s) infinite;
@@ -291,20 +296,20 @@ body {
     overflow: hidden;
     pointer-events: none;
 }
-/* the thick one: dark blue with cyan edges, for sound that holds */
+/* the big laser: cyan edges fading to blue in the middle (see run_big in components/reactions-layer.jsx) */
 .fx-thick {
     position: absolute;
-    bottom: 0;
-    left: 50%;
-    width: 110px;
-    height: 170%;
-    margin-left: -55px;
-    transform-origin: 50% 100%;
-    background: linear-gradient(to top, rgba(8, 30, 120, 0.95), rgba(10, 40, 150, 0.7) 55%, rgba(10, 40, 150, 0.15));
-    border-left: 4px solid rgba(0, 255, 255, 0.9);
-    border-right: 4px solid rgba(0, 255, 255, 0.9);
-    box-shadow: 0 0 26px 4px rgba(0, 220, 255, 0.45);
+    height: 300vmax;
+    margin-top: -150vmax;
+    transform-origin: 50% 50%;
+    background: linear-gradient(90deg, #00ffff 0%, #1a6fe0 7%, #123a9e 20%, #0a1f66 50%, #123a9e 80%, #1a6fe0 93%, #00ffff 100%);
+    box-shadow: 0 0 30px 6px rgba(0, 220, 255, 0.45);
     opacity: 0;
+}
+.fx-tint {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
 }
 .fx-beam {
     position: absolute;

@@ -7,8 +7,13 @@ const listeners = new Set()
 // how loud each part of the sound is right now, 0..1: [low, body, mid, crack, air]. Kept here, not sent as events:
 // the visual side reads it whenever it draws a frame (a few times a second it is refreshed by the BeatProvider).
 const bands = new Float32Array(5)
-export function set_bands(values) {
+let tone = 0.5 // where the weight of the sound sits, 0 = low .. 1 = high
+export function set_bands(values, new_tone = 0.5) {
     for (let i = 0; i < 5; i++) bands[i] = values[i]
+    tone = new_tone
+}
+export function get_tone() {
+    return tone
 }
 export function get_bands() {
     return bands

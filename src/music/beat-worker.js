@@ -3,7 +3,7 @@
 //      { type: "reset" }  forget the tempo found so far and listen again (a new song started)
 // Out: { type: "state", bpm, beat_ms, anchor_wall_ms, confidence }  (anchor = wall-clock time of one beat, epoch ms)
 //      { type: "hit", kind: "kick" | "snare" | "hat", strength }
-//      { type: "bands", values }   (about 30 times a second: how loud [low, body, mid, crack, air] are, each 0..1)   (a drum hit was just heard)
+//      { type: "bands", values, tone }   (about 30 times a second: how loud [low, body, mid, crack, air] are, each 0..1)   (a drum hit was just heard)
 //      { type: "level", rms }   (about twice a second: is there any sound at all?)
 //      { type: "ended" }
 import { TempoFollower } from "./tempo.js"
@@ -20,11 +20,11 @@ class Bands {
         this.count = 0
         this.out = new Array(5).fill(0)
     }
-    frame(levels) {
+    frame(levels, tone) {
         for (let g = 0; g < 5; g++) this.peak[g] = Math.max(0.15, levels[g], this.peak[g] * this.decay)
         if (++this.count % this.every) return
         for (let g = 0; g < 5; g++) this.out[g] = Math.min(1, Math.max(0, levels[g] / this.peak[g]))
-        self.postMessage({ type: "bands", values: this.out })
+        self.postMessage({ type: "bands", values: this.out, tone })
     }
 }
 let reset_requested = false
@@ -40,7 +40,7 @@ async function run(readable) {
     let follower = null
     let detector = null
     let bands = null
-    const hook = () => { follower.tracker.on_frame = (groups, levels) => { detector.frame(groups); bands.frame(levels) } }
+    const hook = () => { follower.tracker.on_frame = (groups, levels) => { detector.frame(groups); bands.frame(levels, follower.tracker.tone) } }
     let sample_rate = 0
     let total = 0 // samples fed so far
     let wall_start = Infinity // wall-clock time (epoch ms) when the stream's first sample was played

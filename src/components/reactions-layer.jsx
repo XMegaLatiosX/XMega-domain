@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react"
 import { useBeat } from "../music/useBeat"
-import { emit_hit, on_hit, get_bands } from "../music/reactor"
+import { emit_hit, on_hit, get_bands, get_tone } from "../music/reactor"
 
 // Visual reactions to the drums, for the home page.
 //
@@ -25,6 +25,9 @@ const SNARES = ["laser", "columns", "glitch", "hue", "pixels"]
 // looks that change the same property of the images cannot play together
 const CONFLICTS = { checker: "scale", columns: "scale", shove: "translate", slide: "translate", lanes: "opacity" }
 const HATS = ["twinkle", "sparks", "tick"]
+// Every so often the title swaps its colours on a few snares in a row, 2 or 4 of them, one swap per snare, so it
+// goes back to normal at the end: cyan letters with a black edge <-> black letters with a cyan edge.
+const INVERT_EVERY = [20, 40] // snares to wait between those runs (min, max)
 const LASER_ALONGSIDE = 0.6 // chance that a snare also fires the thin laser, whatever its look
 const SCENE_BEATS = 16
 
@@ -77,12 +80,12 @@ export function BackBeams() {
         const root = box.current
         if (!root || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
         const beams = Array.from(root.querySelectorAll(".fx-beam"))
-        const thick = root.querySelector(".fx-thick")
+        const tint = root.querySelector(".fx-tint")
         const levels = make_levels(beat_ref)
         const angles = beams.map(() => null)
-        let thick_angle = 0
-        let thick_phase = 0
-        let thick_opacity = 0
+        // the mood: slow averages of how fast, how bright and how loud the music is, turned into a faint colour
+        // (calm and dark = blue, fast, bright and loud = red). Only a rough guess from the numbers we have.
+        const mood = { energy: 0.3, tone: 0.45, hue: 215, alpha: 0.12 }
         let last = 0
         let frame = 0
         const draw = (now) => {
@@ -99,15 +102,21 @@ export function BackBeams() {
                 const wanted = 0.04 + 0.3 * sparkle * (0.5 + 0.5 * Math.abs(sweep)) // subtle: they are always there
                 el.style.opacity = String(wanted)
             })
-            if (thick) {
-                // the thick laser comes up while sound holds, and sweeps faster the louder it is
-                const hold = Math.max(0, lv.sustain - 0.25) / 0.75
-                thick_phase += (dt / 1000) * (0.35 + 1.6 * hold)
-                const target = Math.sin(thick_phase) * 38
-                thick_angle += (target - thick_angle) * 0.08
-                thick_opacity += (hold * 0.85 - thick_opacity) * 0.06
-                thick.style.transform = `rotate(${thick_angle.toFixed(2)}deg)`
-                thick.style.opacity = thick_opacity.toFixed(3)
+            if (tint) {
+                const current = beat_ref.current
+                const followed = lv.followed
+                const slow = (target, tau) => 1 - Math.exp(-dt / tau)
+                mood.energy += ((followed ? lv.sustain : 0.3) - mood.energy) * slow(0, 12000)
+                mood.tone += ((followed ? get_tone() : 0.45) - mood.tone) * slow(0, 15000)
+                const bpm = followed && current.bpm ? current.bpm : 110
+                const fast = clamp((bpm - 85) / 90, 0, 1)
+                const bright = clamp((mood.tone - 0.3) / 0.35, 0, 1)
+                const loud = clamp((mood.energy - 0.25) / 0.5, 0, 1)
+                const vibe = 0.45 * fast + 0.3 * bright + 0.25 * loud
+                const hue = (215 + vibe * 140) % 360 // blue, through violet, to red
+                mood.hue += (hue - mood.hue) * slow(0, 6000)
+                mood.alpha += ((0.13 + 0.08 * vibe) - mood.alpha) * slow(0, 6000)
+                tint.style.background = `radial-gradient(ellipse at 50% 55%, hsla(${mood.hue.toFixed(1)}, 85%, 52%, ${mood.alpha.toFixed(3)}), hsla(${mood.hue.toFixed(1)}, 85%, 40%, ${(mood.alpha * 0.4).toFixed(3)}) 60%, transparent 85%)`
             }
             frame = requestAnimationFrame(draw)
         }
@@ -116,7 +125,7 @@ export function BackBeams() {
     }, [])
     return (
         <div ref={box} className="fx-beams" aria-hidden="true">
-            <div className="fx-thick"></div>
+            <div className="fx-tint"></div>
             {[0, 1, 2, 3, 4, 5].map((i) => <div className="fx-beam" key={i} style={{ left: i % 2 === 0 ? "0%" : "100%", transformOrigin: "50% 100%", marginLeft: i % 2 === 0 ? 0 : -2 }}></div>)}
         </div>
     )
@@ -140,7 +149,7 @@ export default function ReactionsLayer() {
         const images = () => Array.from(document.querySelectorAll(".bg-img"))
         const unit = () => clamp(beat_ref.current.get_clock().beat_ms, 250, 1000) // how long one reaction lasts, tied to the tempo
 
-        const state = { slide: 0, parity: { checker: 0, shove: 0, lanes: 0, columns: 0 }, running: new Set(), laser: 0, laser_side: 0, pixel: 0, stream: 0, floor: 0, spark: 0 }
+        const state = { invert_wait: INVERT_EVERY[0] + Math.floor(Math.random() * (INVERT_EVERY[1] - INVERT_EVERY[0])), invert_left: 0, inverted: false, invert_timer: 0, slide: 0, parity: { checker: 0, shove: 0, lanes: 0, columns: 0 }, running: new Set(), laser: 0, laser_side: 0, pixel: 0, stream: 0, floor: 0, spark: 0 }
         const lines = Array.from(root.querySelectorAll(".fx-line"))
         const lasers = Array.from(root.querySelectorAll(".fx-laser"))
         const pixels = Array.from(root.querySelectorAll(".fx-pixel"))
@@ -369,6 +378,22 @@ export default function ReactionsLayer() {
         }
         show()
 
+        const title_swap = () => {
+            const title = document.querySelector(".main-logo")
+            if (!title) return
+            if (state.invert_left === 0) {
+                if (--state.invert_wait > 0) return
+                state.invert_left = Math.random() < 0.5 ? 2 : 4
+                state.invert_wait = INVERT_EVERY[0] + Math.floor(Math.random() * (INVERT_EVERY[1] - INVERT_EVERY[0]))
+            }
+            state.inverted = !state.inverted
+            state.invert_left--
+            title.classList.toggle("is-inverted", state.inverted)
+            // the snares stopped half-way through: do not leave the title swapped
+            clearTimeout(state.invert_timer)
+            if (state.inverted) state.invert_timer = setTimeout(() => { state.inverted = false; state.invert_left = 0; title.classList.remove("is-inverted") }, 3000)
+        }
+
         const hit = (kind, strength) => {
             const look = looks[scene[kind]]
             if (look) look(strength)
@@ -376,6 +401,8 @@ export default function ReactionsLayer() {
             if (extra) extra(strength)
             // the thin laser is the favourite: it also goes off on most snares, whatever the snare look is
             if (kind === "snare" && scene.snare !== "laser" && Math.random() < LASER_ALONGSIDE) looks.laser(Math.min(strength, 1.2))
+            // now and then the title swaps its colours (cyan letters with a black edge <-> black letters with a cyan edge)
+            if (kind === "snare") title_swap()
         }
         const stop_hits = on_hit(hit)
 
@@ -383,6 +410,60 @@ export default function ReactionsLayer() {
         let last_index = null
         let frame = 0
         const levels = make_levels(beat_ref)
+        // The big laser (full opacity): rare, wide, from the middle of the logo (above the images, below the logo). It shows up for a
+        // few seconds when the sound has been holding, changes its width, and starts to turn when the tone of the music
+        // changes: it speeds up and slows down at a constant rate, so the turn is smooth.
+        const thick = root.querySelector(".fx-thick")
+        const big = { level: 0, start: 0, on: false, until: 0, next: performance.now() + 6000, fade: 0, angle: Math.random() * 180, omega: 0, dir: 1, spin_until: 0, phase: 0, fast: null, slow: null, cool: 0 }
+        const demo = params.get("thick") === "demo"
+        const OMEGA_MAX = 70 // degrees per second
+        const ALPHA = 40 // degrees per second, every second
+        const run_big = (now, dt, lv) => {
+            if (!thick) return
+            if (!big.on && now > big.next && (demo || (lv.followed && lv.sustain > 0.5))) {
+                big.on = true
+                big.start = now
+                big.level = lv.sustain
+                big.until = now + 5000 + Math.random() * 4000
+                big.next = big.until + (demo ? 1500 : 12000 + Math.random() * 14000)
+            }
+            // while the sound that brought it in is still relatively strong, it stays (up to 90 s)
+            if (big.on && !demo && lv.followed && lv.sustain >= Math.max(0.4, 0.75 * big.level) && now - big.start < 90000) big.until = Math.max(big.until, now + 1500)
+            if (big.on && now > big.until) big.on = false
+            big.fade += ((big.on ? 1 : 0) - big.fade) * (1 - Math.exp(-dt / 400))
+            // a change of tone (the weight of the sound moving up or down) sets it turning
+            const tone = get_tone()
+            if (big.fast === null) { big.fast = tone; big.slow = tone }
+            big.fast += (tone - big.fast) * (1 - Math.exp(-dt / 250))
+            big.slow += (tone - big.slow) * (1 - Math.exp(-dt / 2500))
+            const changed = Math.abs(big.fast - big.slow) > 0.06 || (demo && Math.floor(now / 5000) !== Math.floor((now - dt) / 5000))
+            if (big.on && changed && now > big.cool) {
+                big.dir = big.fast > big.slow ? 1 : -1
+                if (demo) big.dir = Math.random() < 0.5 ? 1 : -1
+                big.spin_until = now + 2500 + Math.random() * 2000
+                big.cool = big.spin_until + 1000
+            }
+            const target_omega = now < big.spin_until ? big.dir * OMEGA_MAX : 0
+            const step = ALPHA * (dt / 1000)
+            big.omega += Math.max(-step, Math.min(step, target_omega - big.omega))
+            big.angle += big.omega * (dt / 1000)
+            big.phase += (dt / 1000) * 0.7
+            if (big.fade < 0.01) { thick.style.opacity = "0"; return }
+            const badge = document.querySelector(".pixel_logo_gif")
+            if (badge) {
+                const box = badge.getBoundingClientRect()
+                const base = root.getBoundingClientRect()
+                thick.style.left = `${box.left + box.width / 2 - base.left}px`
+                thick.style.top = `${box.top + box.height / 2 - base.top}px`
+            }
+            const opening = 260 * Math.exp(-(now - big.start) / 1600) // starts extra thick and settles
+            const phone = clamp(window.innerWidth / 900, 0.3, 1) // thinner on a phone
+            const width = phone * (120 + 110 * (0.5 + 0.5 * Math.sin(big.phase)) + 80 * lv[0] + opening)
+            thick.style.width = `${width.toFixed(0)}px`
+            thick.style.marginLeft = `${(-width / 2).toFixed(0)}px`
+            thick.style.transform = `rotate(${big.angle.toFixed(2)}deg)`
+            thick.style.opacity = big.fade.toFixed(3)
+        }
         let last_now = 0
         let stream_debt = 0
         let floor_debt = 0
@@ -394,6 +475,7 @@ export default function ReactionsLayer() {
             const dt = Math.min(0.1, (now - (last_now || now)) / 1000)
             last_now = now
             const lv = levels(now)
+            run_big(now, dt * 1000, lv)
             const energy = Math.max(lv[0], lv[1], lv[2] * 0.8)
             const base = root.getBoundingClientRect()
             const badge = document.querySelector(".pixel_logo_gif")
@@ -469,6 +551,8 @@ export default function ReactionsLayer() {
         return () => {
             cancelAnimationFrame(frame)
             stop_hits()
+            clearTimeout(state.invert_timer)
+            document.querySelector(".main-logo")?.classList.remove("is-inverted")
             clean_wall()
             root.getAnimations({ subtree: true }).forEach((animation) => animation.cancel())
             for (const a of drifts) a.playbackRate = 1
@@ -481,6 +565,7 @@ export default function ReactionsLayer() {
         <div ref={layer} className="fx-layer" aria-hidden="true">
             <div className="fx-line" style={{ left: 0 }}></div>
             <div className="fx-line" style={{ right: 0 }}></div>
+            <div className="fx-thick"></div>
             <div className="fx-laser"></div>
             <div className="fx-laser"></div>
             <div className="fx-laser"></div>

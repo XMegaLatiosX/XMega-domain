@@ -63,6 +63,7 @@ export default function BeatProvider({ children }) {
             setTimeout(() => emit_hit(kind, strength), wait)
         })
     }
+    if (typeof window !== "undefined") window.__groove = groove.current // for looking at in the console: __groove.stats, __groove.bias
     const latest = useRef(null) // last estimate from the worker { beat_ms, raw_anchor_perf, bpm }
     const taps = useRef([])
     const tap_timer = useRef(0)
@@ -261,7 +262,7 @@ export default function BeatProvider({ children }) {
                 // the hit was reported a little after it started; the groove snaps it to the grid and drops repeats
                 groove.current.hit(data.kind, data.strength, performance.now() - HIT_DETECT_DELAY_MS)
             } else if (data.type === "bands") {
-                set_bands(data.values)
+                set_bands(data.values, data.tone)
             } else if (data.type === "level") {
                 set_info((current) => (current.mode === "analyzing" || current.mode === "auto" ? { ...current, silent: data.rms < 0.0008 } : current))
             } else if (data.type === "error") {
