@@ -25,7 +25,7 @@ const SNARES = ["laser", "columns", "glitch", "hue", "pixels"]
 // looks that change the same property of the images cannot play together
 const CONFLICTS = { checker: "scale", columns: "scale", shove: "translate", slide: "translate", lanes: "opacity" }
 const HATS = ["twinkle", "sparks", "tick"]
-// Every so often the title swaps its colours on a few snares in a row, 2 or 4 of them, one swap per snare, so it
+// Every so often the title swaps its colours on a run of snares, 4, 8, 12 or 16 of them, one swap per snare, so it
 // goes back to normal at the end: cyan letters with a black edge <-> black letters with a cyan edge.
 const INVERT_EVERY = [20, 40] // snares to wait between those runs (min, max)
 const LASER_ALONGSIDE = 0.6 // chance that a snare also fires the thin laser, whatever its look
@@ -40,14 +40,14 @@ const pick = (list, not) => {
 const PIXEL_COLORS = ["#00ffff", "#ffffff", "#ff2bd6", "#ffee33"]
 
 // How loud [low, body, mid, crack, air] are, 0..1, smoothed. Followed sound: measured. Otherwise made up from the clock.
-function make_levels(beat_ref) {
+function make_levels(beat_ref, force_followed = false) {
     const out = new Float32Array(5)
     out.sustain = 0
     let last = 0
     return (now) => {
         const current = beat_ref.current
         const clock = current.get_clock()
-        const followed = current.mode === "auto" && !current.silent
+        const followed = force_followed || (current.mode === "auto" && !current.silent)
         let target = get_bands()
         if (!followed) {
             const beats = (now - clock.anchor_perf) / clock.beat_ms
@@ -383,7 +383,7 @@ export default function ReactionsLayer() {
             if (!title) return
             if (state.invert_left === 0) {
                 if (--state.invert_wait > 0) return
-                state.invert_left = Math.random() < 0.5 ? 2 : 4
+                state.invert_left = [4, 8, 12, 16][Math.floor(Math.random() * 4)] // always an even number of swaps (ends normal), in whole bars of snares
                 state.invert_wait = INVERT_EVERY[0] + Math.floor(Math.random() * (INVERT_EVERY[1] - INVERT_EVERY[0]))
             }
             state.inverted = !state.inverted
@@ -409,7 +409,7 @@ export default function ReactionsLayer() {
         // one step per beat of the clock: a new look every 16 beats, and the made-up hits when no sound is being followed
         let last_index = null
         let frame = 0
-        const levels = make_levels(beat_ref)
+        const levels = make_levels(beat_ref, params.get("bands") === "manual") // ?bands=manual: for trying things out with levels set by hand
         // The big laser (full opacity): rare, wide, from the middle of the logo (above the images, below the logo). It shows up for a
         // few seconds when the sound has been holding, changes its width, and starts to turn when the tone of the music
         // changes: it speeds up and slows down at a constant rate, so the turn is smooth.
@@ -470,16 +470,98 @@ export default function ReactionsLayer() {
         let drift_at = -1e9
         let drifts = []
         let drift_rate = 1
+        // ---- breaks and drops ----
+        // A break: the sound has been much quieter for a moment after being loud. A drop: it comes back loud all at once
+        // (right after a break, or any big jump). In a break the wall dims, the pulse of the logo gets smaller and the
+        // effects calm down; a drop makes a flash, shock rings, a burst of pixels, the big laser, a fast grid and a glitch.
+        const song = { fast: 0, history: [], hist_at: 0, quiet_since: 0, size: 1, in_break: false, break_at: 0, drop_at: -1e9, peak: 0, pulse: 1, calm: 0 }
+        const flash_el = root.querySelector(".fx-flash")
+        const shocks = Array.from(root.querySelectorAll(".fx-shock"))
+        const do_drop = (now, lv) => {
+            song.drop_at = now
+            song.in_break = false
+            song.calm = 0
+            if (flash_el) play(flash_el, [{ opacity: 0.8 }, { opacity: 0 }], { duration: 500, easing: "ease-out" })
+            const badge = document.querySelector(".pixel_logo_gif")
+            const base = root.getBoundingClientRect()
+            if (badge) {
+                const box = badge.getBoundingClientRect()
+                const reach = Math.hypot(root.clientWidth, root.clientHeight) / 200
+                shocks.forEach((el, i) => {
+                    el.style.left = `${box.left + box.width / 2 - base.left}px`
+                    el.style.top = `${box.top + box.height / 2 - base.top}px`
+                    play(el, [{ transform: "scale(0.4)", opacity: 0.9, borderWidth: "14px" }, { transform: `scale(${reach})`, opacity: 0, borderWidth: "3px" }], { duration: 1100, delay: i * 140, easing: "cubic-bezier(0.1, 0.6, 0.3, 1)", fill: "backwards" })
+                })
+            }
+            looks.pixels(2)
+            setTimeout(() => looks.pixels(2), 120)
+            setTimeout(() => looks.pixels(2), 260)
+            looks.glitch(2)
+            big.on = true
+            big.start = now
+            big.level = lv.sustain
+            big.until = Math.max(big.until, now + 7000)
+            big.next = Math.max(big.next, big.until + 9000)
+        }
+        const run_song = (now, dt, lv) => {
+            if (!lv.followed) {
+                song.pulse += (1 - song.pulse) * 0.05
+                song.size += (1 - song.size) * 0.05
+                document.documentElement.style.setProperty("--pulse", song.pulse.toFixed(3))
+                document.documentElement.style.setProperty("--size", song.size.toFixed(3))
+                if (song.in_break) { song.in_break = false; wall()?.style.removeProperty("opacity") }
+                return
+            }
+            const loud = Math.max(lv[0], lv[1], lv[2] * 0.8)
+            song.fast += (loud - song.fast) * (1 - Math.exp(-dt / 220))
+            song.peak = Math.max(song.peak * Math.exp(-dt / 20000), lv.sustain)
+            // the sustained level a little while ago, to see a jump
+            if (now - song.hist_at > 200) {
+                song.hist_at = now
+                song.history.push(lv.sustain)
+                if (song.history.length > 6) song.history.shift()
+            }
+            const before = song.history.length >= 5 ? song.history[0] : null
+            // quiet for 1.2 s after having been loud: a break
+            if (lv.sustain < 0.28 && song.peak > 0.5) { song.quiet_since = song.quiet_since || now } else { song.quiet_since = 0 }
+            if (!song.in_break && song.quiet_since && now - song.quiet_since > 1200) {
+                song.in_break = true
+                song.break_at = now
+                const el = wall()
+                if (el) el.style.opacity = "0.4"
+            }
+            const cooled = now - song.drop_at > 8000
+            const jumped = before !== null && lv.sustain - before > 0.3 && lv.sustain > 0.55
+            if (cooled && ((song.in_break && now - song.break_at > 1500 && song.fast > 0.7) || jumped)) {
+                const el = wall()
+                if (el) el.style.removeProperty("opacity")
+                do_drop(now, lv)
+            } else if (song.in_break && lv.sustain > 0.45) { // back, but not with a bang
+                song.in_break = false
+                const el = wall()
+                if (el) el.style.removeProperty("opacity")
+            }
+            // very quiet music: the logo's pulse is weaker (1 = normal)
+            const pulse_target = 0.55 + 0.45 * clamp(lv.sustain / 0.35, 0, 1)
+            song.pulse += (pulse_target - song.pulse) * 0.04
+            document.documentElement.style.setProperty("--pulse", song.pulse.toFixed(3))
+            // the size of the logo follows how loud it is (a mix of the quick level and the held one)
+            const size_target = 0.9 + 0.22 * clamp((0.5 * song.fast + 0.5 * lv.sustain) / 0.8, 0, 1)
+            song.size += (size_target - song.size) * (1 - Math.exp(-dt / 120))
+            document.documentElement.style.setProperty("--size", song.size.toFixed(3))
+            song.calm += ((song.in_break ? 1 : 0) - song.calm) * 0.05
+        }
         // squares that flow out of the logo and up from the floor, as many as the sound is loud
         const flow = (now) => {
             const dt = Math.min(0.1, (now - (last_now || now)) / 1000)
             last_now = now
             const lv = levels(now)
             run_big(now, dt * 1000, lv)
+            run_song(now, dt * 1000, lv)
             const energy = Math.max(lv[0], lv[1], lv[2] * 0.8)
             const base = root.getBoundingClientRect()
             const badge = document.querySelector(".pixel_logo_gif")
-            stream_debt += dt * (8 + 40 * energy)
+            stream_debt += dt * (8 + 40 * energy) * (1 - 0.7 * song.calm)
             while (stream_debt >= 1) {
                 stream_debt -= 1
                 const el = streams[state.stream++ % streams.length]
@@ -501,10 +583,11 @@ export default function ReactionsLayer() {
                 drift_at = now
                 drifts = document.getAnimations().filter((a) => a.effect && a.effect.target && a.effect.target.classList && a.effect.target.classList.contains("bg-drift") && a.animationName === "bg-diagonal")
             }
-            const rate_target = lv.followed ? 1 + 2.4 * Math.max(0, lv.sustain - 0.3) : 1
+            const spike = 4 * Math.exp(-(now - song.drop_at) / 2500)
+            const rate_target = (lv.followed ? 1 + 2.4 * Math.max(0, lv.sustain - 0.3) : 1) + spike
             drift_rate += (rate_target - drift_rate) * 0.04
             for (const a of drifts) a.playbackRate = drift_rate
-            floor_debt += dt * (2 + 22 * lv[0] * lv[0] + 6 * lv[1])
+            floor_debt += dt * (2 + 22 * lv[0] * lv[0] + 6 * lv[1]) * (1 - 0.7 * song.calm)
             while (floor_debt >= 1) {
                 floor_debt -= 1
                 const el = floors[state.floor++ % floors.length]
@@ -551,6 +634,9 @@ export default function ReactionsLayer() {
         return () => {
             cancelAnimationFrame(frame)
             stop_hits()
+            document.documentElement.style.removeProperty("--pulse")
+            document.documentElement.style.removeProperty("--size")
+            wall()?.style.removeProperty("opacity")
             clearTimeout(state.invert_timer)
             document.querySelector(".main-logo")?.classList.remove("is-inverted")
             clean_wall()
@@ -565,6 +651,8 @@ export default function ReactionsLayer() {
         <div ref={layer} className="fx-layer" aria-hidden="true">
             <div className="fx-line" style={{ left: 0 }}></div>
             <div className="fx-line" style={{ right: 0 }}></div>
+            <div className="fx-flash"></div>
+            {[0, 1, 2].map((i) => <div className="fx-shock" key={i}></div>)}
             <div className="fx-thick"></div>
             <div className="fx-laser"></div>
             <div className="fx-laser"></div>

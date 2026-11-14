@@ -37,6 +37,7 @@ export class Groove {
 
     reset() {
         this.clock = null
+        this.floor_forced = false // set from outside: assume a kick on every beat (see BeatProvider)
         this.bias = 0 // how far (in steps) the hits really sit from the clock's grid: the clock may be a little early or late
         this.stats = { passed: 0, off_grid: 0, repeat: 0, gated: 0, ghost: 0, as_heard: 0 }
         this.lane = {}
@@ -118,7 +119,10 @@ export class Groove {
         if (!c) return
         for (const kind of KINDS) {
             const lane = this.lane[kind]
-            if (lane.next === null) continue
+            if (lane.next === null) {
+                if (!(this.floor_forced && kind === "kick")) continue
+                lane.next = Math.floor(this.position(now_ms - DETECT_DELAY_MS))
+            }
             const last = Math.floor(this.position(now_ms - DETECT_DELAY_MS) - this.bias - OFF_GRID) // a slot is over once nothing can still arrive for it
             if (lane.next < last - 64) lane.next = last - 64 // a long gap: do not walk through all of it
             while (lane.next <= last) {
@@ -130,7 +134,8 @@ export class Groove {
                 const floor_step = kind === "kick" && index % 4 === 0
                 const near = floor_step && this.slot_time(n) - lane.last < FLOOR_NEAR_BEATS * c.beat_ms
                 const wanted = near ? lane.score[index] >= FLOOR_GHOST_AT && lane.run[index] < MAX_GHOST_RUN + 1 : lane.score[index] >= GHOST_AT && lane.run[index] < MAX_GHOST_RUN
-                if (!heard && !(slot && slot.fired) && this.learned(kind) && wanted) {
+                const forced = this.floor_forced && floor_step // loud and messy: just put a kick on every beat
+                if (!heard && !(slot && slot.fired) && (forced || (this.learned(kind) && wanted))) {
                     ghosted = true
                     // the memory says a hit belongs here but none was heard: play it
                     lane.run[index]++
@@ -140,6 +145,7 @@ export class Groove {
                     this.emit(kind, Math.min(1.2, lane.score[index] + 0.3), this.slot_time(n) + this.bias * c.beat_ms / 4, true)
                 }
                 if (heard) lane.run[index] = 0
+                if (forced && !heard) { lane.score[index] = Math.max(lane.score[index], 0.6); ghosted = false }
                 // only what was really heard teaches the pattern
                 lane.score[index] += (ghosted && near ? FLOOR_RATE : RATE) * ((heard ? 1 : 0) - lane.score[index])
                 if (index === STEPS - 1) lane.bars++

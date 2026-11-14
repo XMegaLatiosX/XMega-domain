@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { useLocation } from "react-router-dom"
 import { BeatContext } from "./beat-context"
-import { emit_hit, set_bands } from "./reactor"
+import { emit_hit, set_bands, get_bands } from "./reactor"
 import { Groove } from "./groove"
 
 // One beat for the whole site.
@@ -64,6 +64,8 @@ export default function BeatProvider({ children }) {
         })
     }
     if (typeof window !== "undefined") window.__groove = groove.current // for looking at in the console: __groove.stats, __groove.bias
+    const last_bpm = useRef(0)
+    const tempo_changes = useRef([]) // when the worker last changed its mind about the tempo
     const latest = useRef(null) // last estimate from the worker { beat_ms, raw_anchor_perf, bpm }
     const taps = useRef([])
     const tap_timer = useRef(0)
@@ -243,7 +245,35 @@ export default function BeatProvider({ children }) {
         const worker = new Worker(new URL("./beat-worker.js", import.meta.url), { type: "module" })
         const processor = new window.MediaStreamTrackProcessor({ track: audio })
         groove.current.reset()
-        const groove_timer = setInterval(() => groove.current.tick(performance.now()), 25)
+        // Loud and messy (the hits keep being rejected, the tempo keeps changing, or the kicks went silent): stop trusting the hits, put a
+        // kick on every beat. It is switched on after 2 s of that and off after 4 s without it.
+        let loud_average = 0
+        let messy_since = 0
+        let clear_since = 0
+        let last_check = 0
+        let marks = []
+        const groove_timer = setInterval(() => {
+            const now = performance.now()
+            const bands = get_bands()
+            loud_average += (Math.max(bands[0], bands[1], bands[2]) - loud_average) * 0.03
+            groove.current.tick(now)
+            if (now - last_check < 1000) return
+            last_check = now
+            const stats = groove.current.stats
+            marks.push({ now, rejected: stats.repeat + stats.off_grid + stats.gated, passed: stats.passed })
+            marks = marks.filter((mark) => now - mark.now < 9000)
+            const first = marks[0]
+            const rejected = stats.repeat + stats.off_grid + stats.gated - first.rejected
+            const passed = stats.passed - first.passed
+            const changes = tempo_changes.current.filter((time) => now - time < 10000).length
+            // or: loud, a kick pattern was going, and for the last 6 beats not one kick has been heard (the kicks died)
+            const last_kick = groove.current.lane.kick.last
+            const kick_gone = groove.current.clock && last_kick > 0 && now - last_kick > 6 * groove.current.clock.beat_ms && now - last_kick < 60000
+            const messy = loud_average > 0.45 && (rejected > 1.5 * (passed + 4) || changes >= 2 || kick_gone)
+            if (messy) { clear_since = 0; messy_since = messy_since || now } else { messy_since = 0; clear_since = clear_since || now }
+            if (!groove.current.floor_forced && messy_since && now - messy_since > 2000) groove.current.floor_forced = true
+            if (groove.current.floor_forced && clear_since && now - clear_since > 4000) groove.current.floor_forced = false
+        }, 25)
         session.current = { worker, audio, latency, chain, groove_timer }
         audio.addEventListener("ended", () => {
             if (session.current && session.current.audio === audio) reset()
@@ -254,6 +284,8 @@ export default function BeatProvider({ children }) {
                 const raw = data.anchor_wall_ms - performance.timeOrigin
                 latest.current = { beat_ms: data.beat_ms, raw_anchor_perf: raw, bpm: data.bpm }
                 groove.current.set_clock(raw, data.beat_ms)
+                if (last_bpm.current && Math.abs(data.bpm / last_bpm.current - 1) > 0.02) tempo_changes.current.push(performance.now())
+                last_bpm.current = data.bpm
                 if (source.current === "auto") {
                     follow(data.beat_ms, raw)
                     set_mode({ mode: "auto", bpm: data.bpm, message: "" })
