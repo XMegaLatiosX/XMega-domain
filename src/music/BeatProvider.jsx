@@ -58,9 +58,9 @@ export default function BeatProvider({ children }) {
     // puts the heard drum hits on the beat grid (see groove.js); a hit it lets through is shown when it will be heard
     const groove = useRef(null)
     if (!groove.current) {
-        groove.current = new Groove((kind, strength, slot_ms) => {
+        groove.current = new Groove((kind, strength, slot_ms, ghost) => {
             const wait = Math.max(0, slot_ms + heard_delay_ms() + nudge_ref.current - performance.now())
-            setTimeout(() => emit_hit(kind, strength), wait)
+            setTimeout(() => emit_hit(kind, strength, ghost), wait)
         })
     }
     if (typeof window !== "undefined") window.__groove = groove.current // for looking at in the console: __groove.stats, __groove.bias
@@ -256,6 +256,7 @@ export default function BeatProvider({ children }) {
             const now = performance.now()
             const bands = get_bands()
             loud_average += (Math.max(bands[0], bands[1], bands[2]) - loud_average) * 0.03
+            groove.current.sound = loud_average > 0.1
             groove.current.tick(now)
             if (now - last_check < 1000) return
             last_check = now

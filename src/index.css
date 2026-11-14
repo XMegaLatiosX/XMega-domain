@@ -318,13 +318,17 @@ body {
     overflow: hidden;
     pointer-events: none;
 }
+/* while the camera pulls back in a drop (components/reactions-layer.jsx) the space around the page is dark */
+html.drop-void, html.drop-void body {
+    background: #02040a !important;
+}
 /* the big laser: cyan edges fading to blue in the middle (see run_big in components/reactions-layer.jsx) */
 .fx-thick {
     position: absolute;
     height: 300vmax;
     margin-top: -150vmax;
     transform-origin: 50% 50%;
-    background: linear-gradient(90deg, #00ffff 0%, #1a6fe0 7%, #123a9e 20%, #0a1f66 50%, #123a9e 80%, #1a6fe0 93%, #00ffff 100%);
+    background: linear-gradient(90deg, #00ffff 0%, #1a8cf0 3%, #123a9e 9%, #0a1f66 18%, #0a1f66 82%, #123a9e 91%, #1a8cf0 97%, #00ffff 100%);
     box-shadow: 0 0 30px 6px rgba(0, 220, 255, 0.45);
     opacity: 0;
 }

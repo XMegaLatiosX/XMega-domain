@@ -24,7 +24,7 @@ const KICKS = ["checker", "shove", "flash", "lines", "lanes", "slide"]
 const SNARES = ["laser", "columns", "glitch", "hue", "pixels"]
 // looks that change the same property of the images cannot play together
 const CONFLICTS = { checker: "scale", columns: "scale", shove: "translate", slide: "translate", lanes: "opacity" }
-const HATS = ["twinkle", "sparks", "tick"]
+const HATS = ["twinkle", "sparks", "tick", "blink"]
 // Every so often the title swaps its colours on a run of snares, 4, 8, 12 or 16 of them, one swap per snare, so it
 // goes back to normal at the end: cyan letters with a black edge <-> black letters with a cyan edge.
 const INVERT_EVERY = [20, 40] // snares to wait between those runs (min, max)
@@ -32,6 +32,21 @@ const LASER_ALONGSIDE = 0.6 // chance that a snare also fires the thin laser, wh
 const SCENE_BEATS = 16
 
 const clamp = (value, low, high) => Math.min(high, Math.max(low, value))
+// least-squares line through evenly spaced values: slope per second (step = seconds between values), how well it
+// fits (r2, 1 = a straight line) and how far it climbs from the first to the last value
+function fit_line(values, step) {
+    const n = values.length
+    let sx = 0, sy = 0, sxy = 0, sxx = 0, syy = 0
+    for (let i = 0; i < n; i++) {
+        const x = i * step
+        sx += x; sy += values[i]; sxy += x * values[i]; sxx += x * x; syy += values[i] * values[i]
+    }
+    const denom = n * sxx - sx * sx
+    const slope = denom ? (n * sxy - sx * sy) / denom : 0
+    const ss_tot = syy - (sy * sy) / n
+    const ss_res = ss_tot - slope * (sxy - (sx * sy) / n)
+    return { slope, r2: ss_tot > 1e-9 ? 1 - ss_res / ss_tot : 0, rise: values[n - 1] - values[0] }
+}
 const mod = (value, size) => ((value % size) + size) % size
 const pick = (list, not) => {
     const rest = list.filter((name) => name !== not)
@@ -86,11 +101,14 @@ export function BackBeams() {
         // the mood: slow averages of how fast, how bright and how loud the music is, turned into a faint colour
         // (calm and dark = blue, fast, bright and loud = red). Only a rough guess from the numbers we have.
         const mood = { energy: 0.3, tone: 0.45, hue: 215, alpha: 0.12 }
+        let hat_glow = 0 // the thin beams flash a little on every hi-hat
+        const stop_hats = on_hit((kind) => { if (kind === "hat") hat_glow = 1 })
         let last = 0
         let frame = 0
         const draw = (now) => {
             const dt = Math.min(100, now - (last || now))
             last = now
+            hat_glow *= Math.exp(-dt / 150)
             const lv = levels(now)
             const sparkle = Math.min(1, lv[3] * 0.9 + lv[4] * 0.7 + lv[0] * 0.3)
             beams.forEach((el, i) => {
@@ -99,7 +117,7 @@ export function BackBeams() {
                 const target = side * (18 + 26 * (i / beams.length)) + sweep * (8 + 8 * lv.sustain)
                 angles[i] = angles[i] === null ? target : angles[i] + (target - angles[i]) * 0.05 // eased, no jerks
                 el.style.transform = `rotate(${angles[i].toFixed(2)}deg)`
-                const wanted = 0.04 + 0.3 * sparkle * (0.5 + 0.5 * Math.abs(sweep)) // subtle: they are always there
+                const wanted = 0.04 + 0.3 * sparkle * (0.5 + 0.5 * Math.abs(sweep)) + 0.22 * hat_glow // subtle: they are always there
                 el.style.opacity = String(wanted)
             })
             if (tint) {
@@ -121,7 +139,10 @@ export function BackBeams() {
             frame = requestAnimationFrame(draw)
         }
         frame = requestAnimationFrame(draw)
-        return () => cancelAnimationFrame(frame)
+        return () => {
+            cancelAnimationFrame(frame)
+            stop_hats()
+        }
     }, [])
     return (
         <div ref={box} className="fx-beams" aria-hidden="true">
@@ -315,6 +336,10 @@ export default function ReactionsLayer() {
             if (!img) return
             play(img, [{ opacity: 1, filter: "brightness(1.8)" }, { opacity: 0.5, filter: "brightness(1)" }], { duration: 160, easing: "ease-out" })
         }
+        // the title blinks white for a moment
+        looks.blink = () => {
+            play(document.querySelector(".main-logo"), [{ color: "#ffffff" }, { color: "#ffffff" }], { duration: 90, easing: "steps(1, end)" })
+        }
         // a few specks light up where they are and go out
         looks.sparks = () => {
             const width = root.clientWidth
@@ -474,14 +499,52 @@ export default function ReactionsLayer() {
         // A break: the sound has been much quieter for a moment after being loud. A drop: it comes back loud all at once
         // (right after a break, or any big jump). In a break the wall dims, the pulse of the logo gets smaller and the
         // effects calm down; a drop makes a flash, shock rings, a burst of pixels, the big laser, a fast grid and a glitch.
-        const song = { fast: 0, history: [], hist_at: 0, quiet_since: 0, size: 1, in_break: false, break_at: 0, drop_at: -1e9, peak: 0, pulse: 1, calm: 0 }
+        const song = { fast: 0, quiet_since: 0, short: 0, long: 0, hist: [], hist_at: 0, ramp_at: -1e9, log: [], size: 1, in_break: false, break_at: 0, drop_at: -1e9, peak: 0, pulse: 1, calm: 0 }
+        if (typeof window !== "undefined") window.__song = song // for the console: __song.in_break, __song.log (the last breaks and drops)
         const flash_el = root.querySelector(".fx-flash")
         const shocks = Array.from(root.querySelectorAll(".fx-shock"))
+        // the space around the shrunken page: stars streaming out from the middle of the screen, behind the page
+        const warp_stars = () => {
+            const holder = document.createElement("div")
+            holder.style.cssText = "position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden"
+            document.body.insertBefore(holder, document.body.firstChild)
+            const reach = Math.hypot(window.innerWidth, window.innerHeight) * 0.6
+            for (let i = 0; i < 90; i++) {
+                const star = document.createElement("div")
+                const angle = Math.random() * 360
+                const near = 0.05 + Math.random() * 0.25
+                star.style.cssText = `position:absolute;left:50%;top:50%;width:${24 + Math.random() * 40}px;height:${Math.random() < 0.3 ? 3 : 2}px;background:${Math.random() < 0.7 ? "#bff" : "#fff"};box-shadow:0 0 6px #0ff;opacity:0;transform-origin:0 50%`
+                holder.appendChild(star)
+                star.animate([
+                    { transform: `rotate(${angle}deg) translateX(${reach * near}px) scaleX(0.2)`, opacity: 0 },
+                    { transform: `rotate(${angle}deg) translateX(${reach * (near + 0.35)}px) scaleX(1)`, opacity: 0.9, offset: 0.35 },
+                    { transform: `rotate(${angle}deg) translateX(${reach * 1.1}px) scaleX(2.2)`, opacity: 0 },
+                ], { duration: 1500 + Math.random() * 900, delay: Math.random() * 700, easing: "cubic-bezier(0.3, 0.1, 0.8, 0.6)", fill: "both" })
+            }
+            setTimeout(() => holder.remove(), 3400)
+        }
         const do_drop = (now, lv) => {
             song.drop_at = now
             song.in_break = false
             song.calm = 0
             if (flash_el) play(flash_el, [{ opacity: 0.8 }, { opacity: 0 }], { duration: 500, easing: "ease-out" })
+            // the camera pulls back to about half size, so there is open space all around the page, drifts a little,
+            // then comes back in with a small overshoot, like a handheld shot
+            const stage = root.parentElement
+            if (stage) {
+                const tilt = Math.random() < 0.5 ? -1 : 1
+                const html = document.documentElement
+                html.classList.add("drop-void")
+                warp_stars()
+                setTimeout(() => html.classList.remove("drop-void"), 2600)
+                play(stage, [
+                    { transform: "scale(1) rotate(0deg)", boxShadow: "0 0 0 0 rgba(0,255,255,0)" },
+                    { transform: `scale(0.36) rotate(${-1.6 * tilt}deg)`, boxShadow: "0 0 0 3px rgba(0,255,255,0.8), 0 0 40px 6px rgba(0,255,255,0.4)", offset: 0.22 },
+                    { transform: `scale(0.4) rotate(${1.2 * tilt}deg)`, boxShadow: "0 0 0 3px rgba(0,255,255,0.8), 0 0 40px 6px rgba(0,255,255,0.4)", offset: 0.5 },
+                    { transform: "scale(1.04) rotate(0deg)", boxShadow: "0 0 0 2px rgba(0,255,255,0.4), 0 0 20px 2px rgba(0,255,255,0.2)", offset: 0.85 },
+                    { transform: "scale(1) rotate(0deg)", boxShadow: "0 0 0 0 rgba(0,255,255,0)" },
+                ], { duration: 2400, easing: "cubic-bezier(0.2, 0.7, 0.25, 1)" })
+            }
             const badge = document.querySelector(".pixel_logo_gif")
             const base = root.getBoundingClientRect()
             if (badge) {
@@ -515,26 +578,41 @@ export default function ReactionsLayer() {
             const loud = Math.max(lv[0], lv[1], lv[2] * 0.8)
             song.fast += (loud - song.fast) * (1 - Math.exp(-dt / 220))
             song.peak = Math.max(song.peak * Math.exp(-dt / 20000), lv.sustain)
-            // the sustained level a little while ago, to see a jump
-            if (now - song.hist_at > 200) {
-                song.hist_at = now
-                song.history.push(lv.sustain)
-                if (song.history.length > 6) song.history.shift()
-            }
-            const before = song.history.length >= 5 ? song.history[0] : null
             // quiet for 1.2 s after having been loud: a break
             if (lv.sustain < 0.28 && song.peak > 0.5) { song.quiet_since = song.quiet_since || now } else { song.quiet_since = 0 }
             if (!song.in_break && song.quiet_since && now - song.quiet_since > 1200) {
                 song.in_break = true
                 song.break_at = now
+                song.log.push({ at: Math.round(now), what: "break", sustain: +lv.sustain.toFixed(2) })
                 const el = wall()
                 if (el) el.style.opacity = "0.4"
             }
+            // How the sound moves. A build-up is a rise that is close to a straight line for 5 s or more (a riser); a drop
+            // is a jump up all at once, and it only counts right after a break or the end of a build-up. A kick on its
+            // own proves nothing: kicks are also used in build-ups.
+            song.short += (loud - song.short) * (1 - Math.exp(-dt / 300))
+            song.long += (loud - song.long) * (1 - Math.exp(-dt / 2200))
+            if (now - song.hist_at > 250) {
+                song.hist_at = now
+                song.hist.push(lv.sustain)
+                if (song.hist.length > 40) song.hist.shift()
+                if (song.hist.length >= 20) {
+                    const line = fit_line(song.hist.slice(-20), 0.25)
+                    if (line.slope > 0.03 && line.r2 > 0.8 && line.rise > 0.12) {
+                        if (now - song.ramp_at > 6000) song.log.push({ at: Math.round(now), what: "build-up", slope: +line.slope.toFixed(3), r2: +line.r2.toFixed(2) })
+                        song.ramp_at = now
+                    }
+                }
+            }
+            const armed = now - song.ramp_at < 6000
             const cooled = now - song.drop_at > 8000
-            const jumped = before !== null && lv.sustain - before > 0.3 && lv.sustain > 0.55
-            if (cooled && ((song.in_break && now - song.break_at > 1500 && song.fast > 0.7) || jumped)) {
+            const long_break = song.in_break && now - song.break_at > 1500
+            const jump = song.short - song.long
+            if (cooled && (armed || long_break) && jump >= 0.25 && song.short > 0.55) {
                 const el = wall()
                 if (el) el.style.removeProperty("opacity")
+                song.log.push({ at: Math.round(now), what: armed ? "drop (after build-up)" : "drop (after break)", jump: +jump.toFixed(2), level: +song.short.toFixed(2) })
+                song.ramp_at = -1e9
                 do_drop(now, lv)
             } else if (song.in_break && lv.sustain > 0.45) { // back, but not with a bang
                 song.in_break = false
@@ -583,8 +661,8 @@ export default function ReactionsLayer() {
                 drift_at = now
                 drifts = document.getAnimations().filter((a) => a.effect && a.effect.target && a.effect.target.classList && a.effect.target.classList.contains("bg-drift") && a.animationName === "bg-diagonal")
             }
-            const spike = 4 * Math.exp(-(now - song.drop_at) / 2500)
-            const rate_target = (lv.followed ? 1 + 2.4 * Math.max(0, lv.sustain - 0.3) : 1) + spike
+            const spike = 6.5 * Math.exp(-(now - song.drop_at) / 3500) // the grid races after a drop, then settles
+            const rate_target = Math.min(8, (lv.followed ? 1 + 2.4 * Math.max(0, lv.sustain - 0.3) : 1) + spike)
             drift_rate += (rate_target - drift_rate) * 0.04
             for (const a of drifts) a.playbackRate = drift_rate
             floor_debt += dt * (2 + 22 * lv[0] * lv[0] + 6 * lv[1]) * (1 - 0.7 * song.calm)

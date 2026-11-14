@@ -4,12 +4,17 @@ import { useMusic } from "./useMusic"
 import { on_hit } from "./reactor"
 
 // Small row at the top of the player: what the beat follows.
-//   auto  follow the tab's sound (asks once to share the tab's sound, then keeps it)
+//   auto  follow the tab's sound (asks once to share the tab's sound, then keeps it). Only shown where the browser
+//         can share a tab's sound (desktop Chrome and the like): phones cannot, so there it is left out
+
 //   tap   tap the beat: counts from the 2nd tap, the last tap is a beat. Also on the T key.
 //   bpm   type a tempo and press Enter: it starts at that moment, then a tap moves where the beat falls
 //   x     let go of everything and go back to the idle 144
+// can this browser share a tab's sound and read it? (not on phones)
+const CAN_FOLLOW = typeof window !== "undefined" && typeof window.MediaStreamTrackProcessor !== "undefined" && !!(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia)
+
 export default function BeatControls() {
-    const { mode, bpm, silent, message, taps, lag, set_lag, lag_level, lag_state, auto, tap, set_bpm, nudge, reset } = useBeat()
+    const { mode, bpm, silent, message, taps, auto, tap, set_bpm, nudge, reset } = useBeat()
     const { dock_open } = useMusic()
     const [draft, set_draft] = useState(null) // text while the BPM box is being edited
     const lights = useRef({ kick: null, snare: null, hat: null }) // the little K and S that blink on every drum hit
@@ -44,7 +49,7 @@ export default function BeatControls() {
         (mode === "analyzing" ? (silent ? "Nothing audible in this tab yet. Start a song." : "Listening for the beat... the pulse is paused until it finds it.") :
         mode === "auto" ? "Following this tab's sound. [ and ] move the pulse 10 ms." :
         mode === "manual" ? "Manual tempo. Tap to move where the beat falls." :
-        "Idle beat, 144 BPM. Press auto to follow the music.")
+        (CAN_FOLLOW ? "Idle beat, 144 BPM. Press auto to follow the music." : "Idle beat, 144 BPM. Tap the beat or type a BPM."))
 
     const small = "h-5 px-1.5 text-[11px] leading-none border border-cyan-800 text-cyan-300 hover:bg-cyan-950 cursor-pointer whitespace-nowrap"
     const on = "bg-cyan-950 text-cyan-100 border-cyan-500"
@@ -56,7 +61,7 @@ export default function BeatControls() {
 
     return (
         <div className="flex items-center gap-1 shrink-0" data-music-ui>
-            <button type="button" className={`${small} ${mode === "auto" || analyzing ? on : ""}`} onClick={auto} title={hint} aria-label="auto: follow the music's beat">auto sync</button>
+            {CAN_FOLLOW && <button type="button" className={`${small} ${mode === "auto" || analyzing ? on : ""}`} onClick={auto} title={hint} aria-label="auto: follow the music's beat">auto sync</button>}
             <button
                 type="button" className={`${small} ${mode === "manual" && taps > 0 ? on : ""}`}
                 onPointerDown={tap} onClick={(event) => { if (event.detail === 0) tap() }}
@@ -65,18 +70,6 @@ export default function BeatControls() {
             >
                 {taps > 0 ? `tap ${taps}` : "tap"}
             </button>
-            <button
-                type="button" className={`${small} ${lag ? on : ""}`} onClick={() => set_lag(!lag)}
-                title="TEST: play the sound 4 s late (the tab is silenced and played back from here). Asks to share the tab again. Not remembered after a reload."
-                aria-label="test: delay the sound by 4 seconds" aria-pressed={lag}
-            >
-                4s test
-            </button>
-            {lag && mode !== "idle" && (
-                <span className="text-[10px] leading-none text-cyan-500 whitespace-nowrap" title="Level of the sound about to be played, and the state of the audio engine. If this moves but you hear nothing, the tab is being muted as a whole.">
-                    out {Math.round((lag_level || 0) * 1000)} {lag_state || ""}
-                </span>
-            )}
             <input
                 type="text" inputMode="decimal" aria-label="BPM"
                 value={draft !== null ? draft : analyzing ? "" : shown}

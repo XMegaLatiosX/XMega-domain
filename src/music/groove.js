@@ -4,10 +4,15 @@
 //   - every hit is snapped to the nearest 16th note of the beat clock; one slot can fire only once per kind,
 //     so one kick that is heard five times is still one kick
 //   - a hit that lands between two 16ths (more than 0.4 of a step away) is dropped, unless it is strong
+//   - a known kick pattern (patterns.js: four on the floor, two-step, breaks, half-time, the build-up ones) that
+//     fits what was heard becomes the song's default: missing kicks on its steps are filled in, weak odd hits dropped.
+//     It is let go when something that recurs fits another pattern better, or when the sound stops.
 //   - the bar (16 steps) is remembered per kind: how often each step had a hit lately. Once a pattern is known,
 //     a weak hit on a step that never has one is dropped, and a step that always has one but was missed is
 //     filled in (a "ghost" hit), so one tiny change does not break a pattern that was going well.
 // Times are in ms of the same clock the beat anchor uses (performance.now()).
+
+import { TEMPLATES, best_fit } from "./patterns.js"
 
 const KINDS = ["kick", "snare", "hat"]
 const STEPS = 16
@@ -37,6 +42,11 @@ export class Groove {
 
     reset() {
         this.clock = null
+        this.pattern = null // name of the kick pattern the song is locked to (see patterns.js), or null
+        this.candidate = { name: null, count: 0 }
+        this.bad_bars = 0
+        this.sound = true // set from outside: is there sound at all? (the pattern is let go when it stops)
+        this.quiet_at = 0
         this.floor_forced = false // set from outside: assume a kick on every beat (see BeatProvider)
         this.bias = 0 // how far (in steps) the hits really sit from the clock's grid: the clock may be a little early or late
         this.stats = { passed: 0, off_grid: 0, repeat: 0, gated: 0, ghost: 0, as_heard: 0 }
@@ -108,15 +118,48 @@ export class Groove {
         if (slot.fired) return // a ghost already stood in for it
         const index = ((n % STEPS) + STEPS) % STEPS
         if (index % 4 !== 0 && this.learned(kind) && strength < WEAK && lane.score[index] < GATE_BELOW) { this.stats.gated++; return } // not part of this pattern
+        // locked to a pattern: a weak hit that is not on it and has not been heard before is not part of the song's pattern
+        if (kind === "kick" && this.pattern && !TEMPLATES[this.pattern].includes(index) && strength < 1.6 && lane.score[index] < 0.35) { this.stats.gated++; return }
         slot.fired = true
         this.stats.passed++
         this.emit(kind, strength, this.slot_time(n) + this.bias * c.beat_ms / 4, false)
     }
 
     // call often (every ~25 ms): closes the slots that are over and fills in the missed ones
+    // once a bar: does what was heard fit a known pattern? Lock on after 2 bars in a row of the same fit; switch only
+    // when another fits clearly better for 2 bars; let go when nothing fits any more for 2 bars.
+    evaluate() {
+        const lane = this.lane.kick
+        if (lane.bars < 3) return
+        const { all, best } = best_fit(lane.score)
+        if (!this.pattern) {
+            if (best && best.name === this.candidate.name) this.candidate.count++
+            else this.candidate = { name: best ? best.name : null, count: best ? 1 : 0 }
+            if (best && this.candidate.count >= 2) { this.pattern = best.name; this.bad_bars = 0; this.candidate = { name: null, count: 0 } }
+            return
+        }
+        const current = all[this.pattern]
+        this.bad_bars = current.fit < 0.3 ? this.bad_bars + 1 : 0
+        if (this.bad_bars >= 2) { this.pattern = null; this.bad_bars = 0; return }
+        if (best && best.name !== this.pattern && best.fit > current.fit + 0.25) {
+            if (best.name === this.candidate.name) this.candidate.count++
+            else this.candidate = { name: best.name, count: 1 }
+            if (this.candidate.count >= 2) { this.pattern = best.name; this.candidate = { name: null, count: 0 } }
+        } else {
+            this.candidate = { name: null, count: 0 }
+        }
+    }
+
     tick(now_ms) {
         const c = this.clock
         if (!c) return
+        // the sound stopped: let the pattern go (and put no kicks in the silence)
+        if (!this.sound) {
+            if (!this.quiet_at) this.quiet_at = now_ms
+            if (now_ms - this.quiet_at > 1500) this.pattern = null
+        } else {
+            this.quiet_at = 0
+        }
         for (const kind of KINDS) {
             const lane = this.lane[kind]
             if (lane.next === null) {
@@ -135,7 +178,8 @@ export class Groove {
                 const near = floor_step && this.slot_time(n) - lane.last < FLOOR_NEAR_BEATS * c.beat_ms
                 const wanted = near ? lane.score[index] >= FLOOR_GHOST_AT && lane.run[index] < MAX_GHOST_RUN + 1 : lane.score[index] >= GHOST_AT && lane.run[index] < MAX_GHOST_RUN
                 const forced = this.floor_forced && floor_step // loud and messy: just put a kick on every beat
-                if (!heard && !(slot && slot.fired) && (forced || (this.learned(kind) && wanted))) {
+                const on_pattern = kind === "kick" && this.sound && this.pattern && TEMPLATES[this.pattern].includes(index) // a kick belongs here, by the song's pattern
+                if (!heard && !(slot && slot.fired) && this.sound && (forced || on_pattern || (this.learned(kind) && wanted))) { // (no ghosts in silence)
                     ghosted = true
                     // the memory says a hit belongs here but none was heard: play it
                     lane.run[index]++
@@ -148,7 +192,10 @@ export class Groove {
                 if (forced && !heard) { lane.score[index] = Math.max(lane.score[index], 0.6); ghosted = false }
                 // only what was really heard teaches the pattern
                 lane.score[index] += (ghosted && near ? FLOOR_RATE : RATE) * ((heard ? 1 : 0) - lane.score[index])
-                if (index === STEPS - 1) lane.bars++
+                if (index === STEPS - 1) {
+                    lane.bars++
+                    if (kind === "kick") this.evaluate()
+                }
                 lane.slots.delete(n - 8)
                 lane.next++
             }
