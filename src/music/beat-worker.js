@@ -1,9 +1,10 @@
 // Runs off the main thread: reads the shared tab's audio, finds the tempo and the beat positions.
 // In:  { type: "start", readable }  (a stream of AudioData from MediaStreamTrackProcessor) | { type: "stop" }
+//      { type: "settings", values }  the detection and tempo settings (settings.js, WORKER_KEYS); can come at any time
 //      { type: "reset" }  forget the tempo found so far and listen again (a new song started)
 // Out: { type: "state", bpm, beat_ms, anchor_wall_ms, confidence }  (anchor = wall-clock time of one beat, epoch ms)
 //      { type: "hit", kind: "kick" | "snare" | "hat", strength }
-//      { type: "bands", values, tone }   (about 30 times a second: how loud [low, body, mid, crack, air] are, each 0..1)   (a drum hit was just heard)
+//      { type: "bands", values, tone, bars }   (about 30 times a second: how loud [low, body, mid, crack, air] are, each 0..1; bars = the 24 bands, each 0..1)
 //      { type: "level", rms }   (about twice a second: is there any sound at all?)
 //      { type: "ended" }
 import { TempoFollower } from "./tempo.js"
@@ -19,19 +20,29 @@ class Bands {
         this.every = Math.max(1, Math.round(rate / 30))
         this.count = 0
         this.out = new Array(5).fill(0)
+        this.bar_peak = 0.3
+        this.bars_out = new Array(24).fill(0)
     }
-    frame(levels, tone) {
+    frame(levels, tone, band_levels) {
         for (let g = 0; g < 5; g++) this.peak[g] = Math.max(0.15, levels[g], this.peak[g] * this.decay)
         if (++this.count % this.every) return
         for (let g = 0; g < 5; g++) this.out[g] = Math.min(1, Math.max(0, levels[g] / this.peak[g]))
-        self.postMessage({ type: "bands", values: this.out, tone })
+        // the 24 bars share one scale (the loudest band lately), so their shape is the shape of the sound
+        let loudest = 0
+        for (let b = 0; b < 24; b++) if (band_levels[b] > loudest) loudest = band_levels[b]
+        this.bar_peak = Math.max(0.3, loudest, this.bar_peak * Math.pow(this.decay, this.every))
+        for (let b = 0; b < 24; b++) this.bars_out[b] = Math.min(1, Math.max(0, band_levels[b] / this.bar_peak))
+        self.postMessage({ type: "bands", values: this.out, tone, bars: this.bars_out })
     }
 }
 let reset_requested = false
+let settings = null // the latest values from the settings panel (see settings.js, WORKER_KEYS)
+let apply_settings = () => {}
 
 self.onmessage = (event) => {
     if (event.data.type === "stop") stopped = true
     if (event.data.type === "reset") reset_requested = true
+    if (event.data.type === "settings") { settings = event.data.values; apply_settings() }
     if (event.data.type === "start") run(event.data.readable)
 }
 
@@ -40,7 +51,15 @@ async function run(readable) {
     let follower = null
     let detector = null
     let bands = null
-    const hook = () => { follower.tracker.on_frame = (groups, levels) => { detector.frame(groups); bands.frame(levels, follower.tracker.tone) } }
+    apply_settings = () => {
+        if (!settings) return
+        if (detector) detector.set_params(settings)
+        if (follower) {
+            follower.tracker.set_groups(settings.kick_hz, settings.hat_hz)
+            follower.tempo_options = { min_bpm: settings.bpm_min, max_bpm: settings.bpm_max, prefer_faster: settings.prefer_faster, prior_center: settings.prior_center }
+        }
+    }
+    const hook = () => { follower.tracker.on_frame = (groups, levels) => { detector.frame(groups); bands.frame(levels, follower.tracker.tone, follower.tracker.band_levels) } }
     let sample_rate = 0
     let total = 0 // samples fed so far
     let wall_start = Infinity // wall-clock time (epoch ms) when the stream's first sample was played
@@ -60,6 +79,7 @@ async function run(readable) {
                 detector = new HitDetector(follower.rate, (kind, strength) => self.postMessage({ type: "hit", kind, strength }))
                 bands = new Bands(follower.rate)
                 hook()
+                apply_settings()
             }
             const n = frame.numberOfFrames
             const channels = frame.numberOfChannels
@@ -75,6 +95,7 @@ async function run(readable) {
                 reset_requested = false
                 follower = new TempoFollower(sample_rate)
                 hook() // the drum hits keep their own recent levels across songs
+                apply_settings()
                 follower_start_s = total / sample_rate
                 last_state = null
             }

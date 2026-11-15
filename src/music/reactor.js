@@ -8,9 +8,14 @@ const listeners = new Set()
 // the visual side reads it whenever it draws a frame (a few times a second it is refreshed by the BeatProvider).
 const bands = new Float32Array(5)
 let tone = 0.5 // where the weight of the sound sits, 0 = low .. 1 = high
-export function set_bands(values, new_tone = 0.5) {
+const bars = new Float32Array(24) // the same, for each of the 24 bands (what the data panel draws)
+export function set_bands(values, new_tone = 0.5, new_bars = null) {
     for (let i = 0; i < 5; i++) bands[i] = values[i]
     tone = new_tone
+    if (new_bars) for (let i = 0; i < 24; i++) bars[i] = new_bars[i]
+}
+export function get_bars() {
+    return bars
 }
 export function get_tone() {
     return tone

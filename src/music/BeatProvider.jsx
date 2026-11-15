@@ -2,6 +2,9 @@ import { useEffect, useRef, useState } from "react"
 import { useLocation } from "react-router-dom"
 import { BeatContext } from "./beat-context"
 import { emit_hit, set_bands, get_bands } from "./reactor"
+import { note_event, note_sample } from "./debug-log"
+import { is_echo } from "./beeps"
+import { S, subscribe_settings, worker_values } from "./settings"
 import { Groove } from "./groove"
 
 // One beat for the whole site.
@@ -20,7 +23,7 @@ const ACTIVE_PEAK = 1.2
 const PHASE_TOLERANCE_MS = 25
 const NUDGE_KEY = "beat-nudge-ms"
 const TAP_WINDOW_MS = 2500
-const HIT_DETECT_DELAY_MS = 27 // a drum hit is reported about this long after it started (measured on synthetic drums)
+// (how long after a drum hit starts it is reported: S.hit_delay_ms, 27 ms measured on synthetic drums)
 const LAG_MS = 4000 // in lag mode the tab is silenced and its sound is played back this much later, so the beat is found before it is heard
 
 function read_nudge() {
@@ -63,6 +66,7 @@ export default function BeatProvider({ children }) {
             setTimeout(() => emit_hit(kind, strength, ghost), wait)
         })
     }
+    groove.current.trace = note_event
     if (typeof window !== "undefined") window.__groove = groove.current // for looking at in the console: __groove.stats, __groove.bias
     const last_bpm = useRef(0)
     const tempo_changes = useRef([]) // when the worker last changed its mind about the tempo
@@ -142,6 +146,7 @@ export default function BeatProvider({ children }) {
         current.worker.postMessage({ type: "stop" })
         current.worker.terminate()
         clearInterval(current.groove_timer)
+        if (current.stop_settings) current.stop_settings()
         groove.current.reset()
         current.audio.stop()
         if (current.chain) {
@@ -256,7 +261,8 @@ export default function BeatProvider({ children }) {
             const now = performance.now()
             const bands = get_bands()
             loud_average += (Math.max(bands[0], bands[1], bands[2]) - loud_average) * 0.03
-            groove.current.sound = loud_average > 0.1
+            groove.current.sound = loud_average > S.sound_level
+            note_sample(now, bands)
             groove.current.tick(now)
             if (now - last_check < 1000) return
             last_check = now
@@ -269,13 +275,17 @@ export default function BeatProvider({ children }) {
             const changes = tempo_changes.current.filter((time) => now - time < 10000).length
             // or: loud, a kick pattern was going, and for the last 6 beats not one kick has been heard (the kicks died)
             const last_kick = groove.current.lane.kick.last
-            const kick_gone = groove.current.clock && last_kick > 0 && now - last_kick > 6 * groove.current.clock.beat_ms && now - last_kick < 60000
-            const messy = loud_average > 0.45 && (rejected > 1.5 * (passed + 4) || changes >= 2 || kick_gone)
+            const kick_gone = groove.current.clock && last_kick > 0 && now - last_kick > S.kick_gone_beats * groove.current.clock.beat_ms && now - last_kick < 60000
+            const messy = loud_average > S.loud_on && (rejected > S.reject_ratio * (passed + 4) || changes >= S.tempo_changes || kick_gone)
+            groove.current.info = { loud: loud_average, rejected, passed, changes, kick_gone: !!kick_gone, messy }
             if (messy) { clear_since = 0; messy_since = messy_since || now } else { messy_since = 0; clear_since = clear_since || now }
-            if (!groove.current.floor_forced && messy_since && now - messy_since > 2000) groove.current.floor_forced = true
-            if (groove.current.floor_forced && clear_since && now - clear_since > 4000) groove.current.floor_forced = false
+            if (!groove.current.floor_forced && messy_since && now - messy_since > S.forced_on_s * 1000) groove.current.floor_forced = true
+            if (groove.current.floor_forced && clear_since && now - clear_since > S.forced_off_s * 1000) groove.current.floor_forced = false
         }, 25)
-        session.current = { worker, audio, latency, chain, groove_timer }
+        // the detection and tempo settings go to the worker now and whenever they change
+        worker.postMessage({ type: "settings", values: worker_values() })
+        const stop_settings = subscribe_settings(() => worker.postMessage({ type: "settings", values: worker_values() }))
+        session.current = { worker, audio, latency, chain, groove_timer, stop_settings }
         audio.addEventListener("ended", () => {
             if (session.current && session.current.audio === audio) reset()
         })
@@ -293,9 +303,11 @@ export default function BeatProvider({ children }) {
                 }
             } else if (data.type === "hit") {
                 // the hit was reported a little after it started; the groove snaps it to the grid and drops repeats
-                groove.current.hit(data.kind, data.strength, performance.now() - HIT_DETECT_DELAY_MS)
+                const onset = performance.now() - S.hit_delay_ms
+                if (is_echo(data.kind, onset)) return // the feedback sound heard again, not a drum
+                groove.current.hit(data.kind, data.strength, onset)
             } else if (data.type === "bands") {
-                set_bands(data.values, data.tone)
+                set_bands(data.values, data.tone, data.bars)
             } else if (data.type === "level") {
                 set_info((current) => (current.mode === "analyzing" || current.mode === "auto" ? { ...current, silent: data.rms < 0.0008 } : current))
             } else if (data.type === "error") {

@@ -30,6 +30,23 @@ export class HitDetector {
         this.snare = { mean: 0, spread: 0.1, a: 0, b: 0, last: -1 }
         this.hat = { mean: 0, spread: 0.1, a: 0, b: 0, last: -1 }
         this.before = new Float32Array(5) // the groups of the previous frame (the candidate peak)
+        // the numbers above, adjustable from the settings panel (see settings.js: sensitivity 0 turns a channel off)
+        this.params = { sens: { kick: 1, snare: 1, hat: 1 }, min: { kick: MIN_KICK, snare: MIN_SNARE, hat: MIN_HAT }, hat_air: HAT_AIR_OVER_REST, kick_low: KICK_LOW_OVER_BODY, snare_snap: SNARE_SNAP_OVER_LOW, refractory_s: REFRACTORY_S, hat_refractory_s: HAT_REFRACTORY_S }
+    }
+
+    // values: the worker settings (det_kick, min_kick, hat_air_ratio, ...)
+    set_params(values) {
+        const p = this.params
+        const pick = (key, fallback) => (typeof values[key] === "number" && isFinite(values[key]) ? values[key] : fallback)
+        for (const kind of ["kick", "snare", "hat"]) {
+            p.sens[kind] = pick(`det_${kind}`, p.sens[kind])
+            p.min[kind] = pick(`min_${kind}`, p.min[kind])
+        }
+        p.hat_air = pick("hat_air_ratio", p.hat_air)
+        p.kick_low = pick("kick_low_ratio", p.kick_low)
+        p.snare_snap = pick("snare_snap_ratio", p.snare_snap)
+        p.refractory_s = pick("refractory_ms", p.refractory_s * 1000) / 1000
+        p.hat_refractory_s = pick("hat_refractory_ms", p.hat_refractory_s * 1000) / 1000
     }
 
     frame(groups) {
@@ -37,9 +54,10 @@ export class HitDetector {
         const kick_value = groups[0]
         const snare_value = groups[2] + groups[3] + 0.5 * groups[4]
         const [low, body, mid, crack, air] = this.before
-        const kick = this.step(this.kick, kick_value, MIN_KICK, low >= KICK_LOW_OVER_BODY * body)
-        const snare = this.step(this.snare, snare_value, MIN_SNARE, mid + crack >= SNARE_SNAP_OVER_LOW * low)
-        const hat = this.step(this.hat, groups[4] + 0.5 * groups[3], MIN_HAT, air + crack >= HAT_AIR_OVER_REST * (low + body + mid), HAT_REFRACTORY_S)
+        const p = this.params
+        const kick = this.step(this.kick, kick_value, p.min.kick, low >= p.kick_low * body, p.refractory_s, p.sens.kick)
+        const snare = this.step(this.snare, snare_value, p.min.snare, mid + crack >= p.snare_snap * low, p.refractory_s, p.sens.snare)
+        const hat = this.step(this.hat, groups[4] + 0.5 * groups[3], p.min.hat, air + crack >= p.hat_air * (low + body + mid), p.hat_refractory_s, p.sens.hat)
         if (kick > 0) this.fire("kick", kick)
         if (snare > 0) this.fire("snare", snare)
         if (hat > 0) this.fire("hat", hat)
@@ -53,9 +71,10 @@ export class HitDetector {
     }
 
     // returns the strength (in "spreads" above the recent level) if the PREVIOUS frame was a peak that counts, else 0
-    step(state, value, minimum, shape_ok, refractory_s = REFRACTORY_S) {
+    step(state, value, minimum, shape_ok, refractory_s = REFRACTORY_S, sens = 1) {
         const { a, b } = state
-        const threshold = Math.max(minimum, state.mean + K * state.spread)
+        // sens above 1 lowers the bar (fewer spreads above the recent level), below 1 raises it, 0 means never
+        const threshold = sens > 0 ? Math.max(minimum, state.mean + (K / sens) * state.spread) : Infinity
         let strength = 0
         const refractory = this.frame_count - state.last < refractory_s * this.rate
         if (!refractory && shape_ok && b > threshold && b > a && b >= value) strength = (b - state.mean) / Math.max(1e-3, state.spread)

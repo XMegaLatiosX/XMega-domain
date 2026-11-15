@@ -54,6 +54,17 @@ function make_fft(n) {
     }
 }
 
+// for drawing the bands: the centre frequency of band b and which of the 5 groups it belongs to (roughly: the tracker
+// itself rounds to FFT bins)
+export const BAND_COUNT = BANDS
+export function band_hz(b) {
+    return MIN_HZ * Math.pow(MAX_HZ / MIN_HZ, (b + 0.5) / BANDS)
+}
+export function band_group(b, kick_hz = 160, hat_hz = 5000) {
+    const hz = band_hz(b)
+    return hz < kick_hz ? 0 : hz < 450 ? 1 : hz < 1000 ? 2 : hz < hat_hz ? 3 : 4
+}
+
 export class OnsetTracker {
     constructor(sample_rate) {
         this.sample_rate = sample_rate
@@ -73,6 +84,7 @@ export class OnsetTracker {
         this.groups = new Float32Array(5)
         // and how loud each of those parts is now (the average of its bands' levels, 0 = silence, about 1 = loud)
         this.levels = new Float32Array(5)
+        this.band_levels = new Float32Array(BANDS) // the level of every one of the 24 bands in the latest frame (for the data panel)
         this.group_size = new Uint8Array(5)
         // where the weight of the sound sits above the kick range, 0 = low, 1 = high (a rough "tone" of what is playing)
         this.tone = 0.5
@@ -88,9 +100,17 @@ export class OnsetTracker {
         }
         for (let b = 1; b <= BANDS; b++) if (this.edges[b] <= this.edges[b - 1]) this.edges[b] = this.edges[b - 1] + 1
         this.group_of = new Uint8Array(BANDS)
+        this.centre_hz = new Float32Array(BANDS)
+        for (let b = 0; b < BANDS; b++) this.centre_hz[b] = Math.sqrt(this.edges[b] * this.edges[b + 1]) * bin_hz
+        this.set_groups(160, 5000)
+    }
+
+    // where the 5 groups [low, body, mid, crack, air] begin and end: low ends at kick_hz, air starts at hat_hz
+    set_groups(kick_hz, hat_hz) {
+        this.group_size.fill(0)
         for (let b = 0; b < BANDS; b++) {
-            const centre = Math.sqrt(this.edges[b] * this.edges[b + 1]) * bin_hz
-            this.group_of[b] = centre < 160 ? 0 : centre < 450 ? 1 : centre < 1000 ? 2 : centre < 5000 ? 3 : 4
+            const centre = this.centre_hz[b]
+            this.group_of[b] = centre < kick_hz ? 0 : centre < 450 ? 1 : centre < 1000 ? 2 : centre < hat_hz ? 3 : 4
             this.group_size[this.group_of[b]]++
         }
     }
@@ -131,6 +151,7 @@ export class OnsetTracker {
             for (let k = from; k < to; k++) sum += Math.hypot(re[k], im[k])
             const level = Math.log1p(40 * (sum / (to - from)) / FFT_SIZE * 8)
             levels[this.group_of[b]] += level
+            this.band_levels[b] = level
             if (this.group_of[b] > 0) {
                 weight += level * level
                 centre += level * level * b
@@ -297,6 +318,7 @@ export class TempoFollower {
         this.pending = null
         this.phase_pending = null
         this.state = null
+        this.tempo_options = {} // min_bpm, max_bpm, prior_center, prefer_faster (see estimateTempo), set from the settings
     }
 
     get time() {
@@ -318,7 +340,7 @@ export class TempoFollower {
 
     update() {
         const used = this.values.slice(-this.window)
-        const r = estimateTempo(used, this.rate)
+        const r = estimateTempo(used, this.rate, this.tempo_options)
         if (!r) return
         // Slow results are usually half-time (the real tempo is twice as fast), so they are doubled.
         // The slow beats are a subset of the doubled grid, so the beat positions stay valid.

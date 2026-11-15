@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react"
 import { useBeat } from "../music/useBeat"
 import { emit_hit, on_hit, get_bands, get_tone } from "../music/reactor"
+import { S, subscribe_settings } from "../music/settings"
 
 // Visual reactions to the drums, for the home page.
 //
@@ -28,8 +29,12 @@ const HATS = ["twinkle", "sparks", "tick", "blink"]
 // Every so often the title swaps its colours on a run of snares, 4, 8, 12 or 16 of them, one swap per snare, so it
 // goes back to normal at the end: cyan letters with a black edge <-> black letters with a cyan edge.
 const INVERT_EVERY = [20, 40] // snares to wait between those runs (min, max)
-const LASER_ALONGSIDE = 0.6 // chance that a snare also fires the thin laser, whatever its look
-const SCENE_BEATS = 16
+// (S in music/settings.js holds every number that can be tuned: laser_alongside, scene_beats, extras_chance, fx_*, show_*, drop_*, ...)
+const WALL_LOOKS = new Set(["checker", "shove", "flash", "slide", "lanes", "columns", "hue", "twinkle"]) // change the images
+const TITLE_LOOKS = new Set(["glitch", "blink"])
+const PIXEL_LOOKS = new Set(["pixels", "sparks"])
+const LASER_LOOKS = new Set(["laser", "tick", "lines"])
+const MIN_GAP_MS = 25 // the same kind of hit never reacts twice within this (keeps a silly sensitivity from burying the page)
 
 const clamp = (value, low, high) => Math.min(high, Math.max(low, value))
 // least-squares line through evenly spaced values: slope per second (step = seconds between values), how well it
@@ -117,8 +122,8 @@ export function BackBeams() {
                 const target = side * (18 + 26 * (i / beams.length)) + sweep * (8 + 8 * lv.sustain)
                 angles[i] = angles[i] === null ? target : angles[i] + (target - angles[i]) * 0.05 // eased, no jerks
                 el.style.transform = `rotate(${angles[i].toFixed(2)}deg)`
-                const wanted = 0.04 + 0.3 * sparkle * (0.5 + 0.5 * Math.abs(sweep)) + 0.22 * hat_glow // subtle: they are always there
-                el.style.opacity = String(wanted)
+                const wanted = (0.04 + 0.3 * sparkle * (0.5 + 0.5 * Math.abs(sweep)) + 0.22 * hat_glow) * S.fx_thin // subtle: they are always there
+                el.style.opacity = String(Math.min(1, wanted))
             })
             if (tint) {
                 const current = beat_ref.current
@@ -134,7 +139,8 @@ export function BackBeams() {
                 const hue = (215 + vibe * 140) % 360 // blue, through violet, to red
                 mood.hue += (hue - mood.hue) * slow(0, 6000)
                 mood.alpha += ((0.13 + 0.08 * vibe) - mood.alpha) * slow(0, 6000)
-                tint.style.background = `radial-gradient(ellipse at 50% 55%, hsla(${mood.hue.toFixed(1)}, 85%, 52%, ${mood.alpha.toFixed(3)}), hsla(${mood.hue.toFixed(1)}, 85%, 40%, ${(mood.alpha * 0.4).toFixed(3)}) 60%, transparent 85%)`
+                const alpha = Math.min(1, mood.alpha * S.fx_tint)
+                tint.style.background = `radial-gradient(ellipse at 50% 55%, hsla(${mood.hue.toFixed(1)}, 85%, 52%, ${alpha.toFixed(3)}), hsla(${mood.hue.toFixed(1)}, 85%, 40%, ${(alpha * 0.4).toFixed(3)}) 60%, transparent 85%)`
             }
             frame = requestAnimationFrame(draw)
         }
@@ -159,6 +165,14 @@ export default function ReactionsLayer() {
     useEffect(() => {
         beat_ref.current = beat
     })
+    // the "logo" switch (settings): a class on <html> turns the logo's beat animation off (see index.css)
+    useEffect(() => {
+        const html = document.documentElement
+        const apply = () => html.classList.toggle("fx-no-logo", !S.show_logo)
+        apply()
+        const stop = subscribe_settings(apply)
+        return () => { stop(); html.classList.remove("fx-no-logo") }
+    }, [])
 
     useEffect(() => {
         const root = layer.current
@@ -180,6 +194,24 @@ export default function ReactionsLayer() {
             if (!el) return null
             const animation = el.animate(keyframes, { fill: "none", ...options })
             return animation
+        }
+
+        // flashes per second are limited (S.flash_per_s, 0 = no limit): a look that would flash is skipped when the limit is reached
+        const flash_times = []
+        const flash_ok = () => {
+            const now = performance.now()
+            while (flash_times.length && now - flash_times[0] > 1000) flash_times.shift()
+            if (S.flash_per_s > 0 && flash_times.length >= S.flash_per_s) return false
+            flash_times.push(now)
+            return true
+        }
+        // may this look run, with the "where effects show" switches and the thin laser strength?
+        const allowed = (name) => {
+            if (WALL_LOOKS.has(name)) return S.show_wall
+            if (TITLE_LOOKS.has(name)) return S.show_title
+            if (PIXEL_LOOKS.has(name)) return S.show_pixels
+            if (LASER_LOOKS.has(name)) return S.fx_thin > 0 && (S.fx_thin >= 1 || Math.random() < S.fx_thin)
+            return true
         }
 
         // for a moment the images are less see-through (their own opacity is not touched: a play on top of it)
@@ -209,10 +241,11 @@ export default function ReactionsLayer() {
             },
             // the whole wall punches out and flashes, then settles
             flash(strength) {
+                if (!flash_ok()) return
                 const el = wall()
                 if (state.flash) state.flash.cancel()
                 state.flash = play(el, [
-                    { scale: 1 + 0.05 * Math.min(strength, 2), filter: "brightness(1.9) saturate(1.4)" },
+                    { scale: 1 + 0.05 * Math.min(strength, 2), filter: `brightness(${1 + 0.9 * S.flash_power}) saturate(${1 + 0.4 * S.flash_power})` },
                     { scale: 1, filter: "brightness(1) saturate(1)" },
                 ], { duration: unit() * 0.8, easing: "cubic-bezier(0.1, 0.7, 0.3, 1)" })
                 solid(unit() * 0.8)
@@ -296,11 +329,12 @@ export default function ReactionsLayer() {
             },
             // the wall's colours spin for a moment
             hue(strength) {
+                if (!flash_ok()) return
                 const el = wall()
                 if (state.hue) state.hue.cancel()
                 const turn = (Math.floor(Math.random() * 5) + 1) * 60
                 state.hue = play(el, [
-                    { filter: `hue-rotate(${turn}deg) saturate(${1.8 + 0.3 * Math.min(strength, 2)}) brightness(1.5)` },
+                    { filter: `hue-rotate(${turn}deg) saturate(${1.8 + 0.3 * Math.min(strength, 2)}) brightness(${1 + 0.5 * S.flash_power})` },
                     { filter: "hue-rotate(0deg) saturate(1) brightness(1)" },
                 ], { duration: unit() * 0.8, easing: "ease-out" })
                 solid(unit() * 0.8)
@@ -313,7 +347,7 @@ export default function ReactionsLayer() {
                 const base = root.getBoundingClientRect()
                 const cx = box.left + box.width / 2 - base.left
                 const cy = box.top + box.height / 2 - base.top
-                const count = 8 + Math.round(4 * Math.min(strength, 2))
+                const count = Math.min(48, Math.round((8 + 4 * Math.min(strength, 2)) * Math.min(S.fx_pixels, 4)))
                 for (let i = 0; i < count; i++) {
                     const el = pixels[state.pixel++ % pixels.length]
                     const angle = Math.random() * Math.PI * 2
@@ -338,6 +372,7 @@ export default function ReactionsLayer() {
         }
         // the title blinks white for a moment
         looks.blink = () => {
+            if (!flash_ok()) return
             play(document.querySelector(".main-logo"), [{ color: "#ffffff" }, { color: "#ffffff" }], { duration: 90, easing: "steps(1, end)" })
         }
         // a few specks light up where they are and go out
@@ -386,7 +421,7 @@ export default function ReactionsLayer() {
             const used = new Set([CONFLICTS[base.kick], CONFLICTS[base.snare]])
             const extra = { kick: null, snare: null }
             for (const [kind, list, colour] of [["kick", KICKS, "flash"], ["snare", SNARES, "hue"]]) {
-                if (base[kind] !== colour && Math.random() > 0.3) continue
+                if (base[kind] !== colour && Math.random() > S.extras_chance) continue
                 const options = list.filter((name) => name !== base[kind] && !(CONFLICTS[name] && used.has(CONFLICTS[name])) && name !== colour)
                 if (!options.length) continue
                 extra[kind] = options[Math.floor(Math.random() * options.length)]
@@ -405,11 +440,11 @@ export default function ReactionsLayer() {
 
         const title_swap = () => {
             const title = document.querySelector(".main-logo")
-            if (!title) return
+            if (!title || S.title_swap_every <= 0) return
             if (state.invert_left === 0) {
                 if (--state.invert_wait > 0) return
                 state.invert_left = [4, 8, 12, 16][Math.floor(Math.random() * 4)] // always an even number of swaps (ends normal), in whole bars of snares
-                state.invert_wait = INVERT_EVERY[0] + Math.floor(Math.random() * (INVERT_EVERY[1] - INVERT_EVERY[0]))
+                state.invert_wait = Math.max(1, Math.round((INVERT_EVERY[0] + Math.floor(Math.random() * (INVERT_EVERY[1] - INVERT_EVERY[0]))) * S.title_swap_every))
             }
             state.inverted = !state.inverted
             state.invert_left--
@@ -419,15 +454,22 @@ export default function ReactionsLayer() {
             if (state.inverted) state.invert_timer = setTimeout(() => { state.inverted = false; state.invert_left = 0; title.classList.remove("is-inverted") }, 3000)
         }
 
+        const last_hit = { kick: 0, snare: 0, hat: 0 }
         const hit = (kind, strength) => {
-            const look = looks[scene[kind]]
-            if (look) look(strength)
-            const extra = scene.extra && looks[scene.extra[kind]]
-            if (extra) extra(strength)
+            // the strength of this kind (settings: fx_kick, fx_snare, fx_hat): 0 = off, below 1 = weaker and rarer
+            const sens = S[`fx_${kind}`]
+            if (!(sens > 0) || (sens < 1 && Math.random() > sens)) return
+            const at = performance.now()
+            if (at - last_hit[kind] < MIN_GAP_MS) return
+            last_hit[kind] = at
+            strength *= sens
+            for (const name of [scene[kind], scene.extra && scene.extra[kind]]) {
+                if (name && looks[name] && allowed(name)) looks[name](strength)
+            }
             // the thin laser is the favourite: it also goes off on most snares, whatever the snare look is
-            if (kind === "snare" && scene.snare !== "laser" && Math.random() < LASER_ALONGSIDE) looks.laser(Math.min(strength, 1.2))
+            if (kind === "snare" && scene.snare !== "laser" && allowed("laser") && Math.random() < S.laser_alongside) looks.laser(Math.min(strength, 1.2))
             // now and then the title swaps its colours (cyan letters with a black edge <-> black letters with a cyan edge)
-            if (kind === "snare") title_swap()
+            if (kind === "snare" && S.show_title) title_swap()
         }
         const stop_hits = on_hit(hit)
 
@@ -439,18 +481,23 @@ export default function ReactionsLayer() {
         // few seconds when the sound has been holding, changes its width, and starts to turn when the tone of the music
         // changes: it speeds up and slows down at a constant rate, so the turn is smooth.
         const thick = root.querySelector(".fx-thick")
+        // thin bright streaks that run along the big laser, away from the logo in both directions: it looks like the beam is really firing
+        const streaks = Array.from(root.querySelectorAll(".fx-streak"))
+        let streak_at = 0
+        let streak_debt = 0
         const big = { level: 0, start: 0, on: false, until: 0, next: performance.now() + 6000, fade: 0, angle: Math.random() * 180, omega: 0, dir: 1, spin_until: 0, phase: 0, fast: null, slow: null, cool: 0 }
         const demo = params.get("thick") === "demo"
         const OMEGA_MAX = 70 // degrees per second
         const ALPHA = 40 // degrees per second, every second
         const run_big = (now, dt, lv) => {
             if (!thick) return
-            if (!big.on && now > big.next && (demo || (lv.followed && lv.sustain > 0.5))) {
+            if (big.on && S.fx_thick <= 0) big.on = false
+            if (!big.on && S.fx_thick > 0 && now > big.next && (demo || (lv.followed && lv.sustain > 0.5))) {
                 big.on = true
                 big.start = now
                 big.level = lv.sustain
                 big.until = now + 5000 + Math.random() * 4000
-                big.next = big.until + (demo ? 1500 : 12000 + Math.random() * 14000)
+                big.next = big.until + (demo ? 1500 : (12000 + Math.random() * 14000) * S.thick_pause)
             }
             // while the sound that brought it in is still relatively strong, it stays (up to 90 s)
             if (big.on && !demo && lv.followed && lv.sustain >= Math.max(0.4, 0.75 * big.level) && now - big.start < 90000) big.until = Math.max(big.until, now + 1500)
@@ -483,11 +530,28 @@ export default function ReactionsLayer() {
             }
             const opening = 260 * Math.exp(-(now - big.start) / 1600) // starts extra thick and settles
             const phone = clamp(window.innerWidth / 900, 0.3, 1) // thinner on a phone
-            const width = phone * (120 + 110 * (0.5 + 0.5 * Math.sin(big.phase)) + 80 * lv[0] + opening)
+            const width = S.fx_thick * phone * (120 + 110 * (0.5 + 0.5 * Math.sin(big.phase)) + 80 * lv[0] + opening)
             thick.style.width = `${width.toFixed(0)}px`
             thick.style.marginLeft = `${(-width / 2).toFixed(0)}px`
             thick.style.transform = `rotate(${big.angle.toFixed(2)}deg)`
             thick.style.opacity = big.fade.toFixed(3)
+            // the streaks are children of the beam, so they turn with it and fade with it
+            streak_debt = Math.min(6, streak_debt + (dt / 1000) * (12 + 26 * lv[0]) * big.fade * Math.min(S.fx_streaks, 4))
+            const reach = Math.hypot(window.innerWidth, window.innerHeight) * 0.7
+            while (streak_debt >= 1 && streaks.length) {
+                streak_debt -= 1
+                const el = streaks[streak_at++ % streaks.length]
+                const direction = Math.random() < 0.5 ? -1 : 1
+                const length = 70 + Math.random() * 170
+                el.style.left = `${4 + Math.random() * 92}%`
+                el.style.height = `${length.toFixed(0)}px`
+                el.style.marginTop = `${(-length / 2).toFixed(0)}px`
+                play(el, [
+                    { transform: "translateY(0) scaleY(0.3)", opacity: 0 },
+                    { transform: `translateY(${direction * reach * 0.15}px) scaleY(1)`, opacity: 1, offset: 0.15 },
+                    { transform: `translateY(${direction * reach}px) scaleY(1.7)`, opacity: 0 },
+                ], { duration: 700 + Math.random() * 700, easing: "cubic-bezier(0.35, 0.1, 0.9, 0.6)" })
+            }
         }
         let last_now = 0
         let stream_debt = 0
@@ -504,12 +568,12 @@ export default function ReactionsLayer() {
         const flash_el = root.querySelector(".fx-flash")
         const shocks = Array.from(root.querySelectorAll(".fx-shock"))
         // the space around the shrunken page: stars streaming out from the middle of the screen, behind the page
-        const warp_stars = () => {
+        const warp_stars = (count) => {
             const holder = document.createElement("div")
             holder.style.cssText = "position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden"
             document.body.insertBefore(holder, document.body.firstChild)
             const reach = Math.hypot(window.innerWidth, window.innerHeight) * 0.6
-            for (let i = 0; i < 90; i++) {
+            for (let i = 0; i < count; i++) {
                 const star = document.createElement("div")
                 const angle = Math.random() * 360
                 const near = 0.05 + Math.random() * 0.25
@@ -527,20 +591,23 @@ export default function ReactionsLayer() {
             song.drop_at = now
             song.in_break = false
             song.calm = 0
-            if (flash_el) play(flash_el, [{ opacity: 0.8 }, { opacity: 0 }], { duration: 500, easing: "ease-out" })
+            if (!(S.fx_drop > 0)) return // drops are logged and keep their cooldown, but nothing happens
+            if (flash_el && flash_ok()) play(flash_el, [{ opacity: Math.min(1, 0.8 * S.flash_power) }, { opacity: 0 }], { duration: 500, easing: "ease-out" })
             // the camera pulls back to about half size, so there is open space all around the page, drifts a little,
             // then comes back in with a small overshoot, like a handheld shot
             const stage = root.parentElement
             if (stage) {
                 const tilt = Math.random() < 0.5 ? -1 : 1
                 const html = document.documentElement
+                // how far the page pulls back: the settled size is drop_zoom, deeper or shallower with the drop strength
+                const zoom = Math.max(0.05, 1 - (1 - S.drop_zoom) * Math.min(S.fx_drop, 2))
                 html.classList.add("drop-void")
-                warp_stars()
+                if (S.drop_stars > 0) warp_stars(Math.min(1000, Math.round(S.drop_stars * Math.min(S.fx_drop, 3))))
                 setTimeout(() => html.classList.remove("drop-void"), 2600)
                 play(stage, [
                     { transform: "scale(1) rotate(0deg)", boxShadow: "0 0 0 0 rgba(0,255,255,0)" },
-                    { transform: `scale(0.36) rotate(${-1.6 * tilt}deg)`, boxShadow: "0 0 0 3px rgba(0,255,255,0.8), 0 0 40px 6px rgba(0,255,255,0.4)", offset: 0.22 },
-                    { transform: `scale(0.4) rotate(${1.2 * tilt}deg)`, boxShadow: "0 0 0 3px rgba(0,255,255,0.8), 0 0 40px 6px rgba(0,255,255,0.4)", offset: 0.5 },
+                    { transform: `scale(${zoom}) rotate(${-1.6 * tilt}deg)`, boxShadow: "0 0 0 3px rgba(0,255,255,0.8), 0 0 40px 6px rgba(0,255,255,0.4)", offset: 0.22 },
+                    { transform: `scale(${(zoom * 1.11).toFixed(3)}) rotate(${1.2 * tilt}deg)`, boxShadow: "0 0 0 3px rgba(0,255,255,0.8), 0 0 40px 6px rgba(0,255,255,0.4)", offset: 0.5 },
                     { transform: "scale(1.04) rotate(0deg)", boxShadow: "0 0 0 2px rgba(0,255,255,0.4), 0 0 20px 2px rgba(0,255,255,0.2)", offset: 0.85 },
                     { transform: "scale(1) rotate(0deg)", boxShadow: "0 0 0 0 rgba(0,255,255,0)" },
                 ], { duration: 2400, easing: "cubic-bezier(0.2, 0.7, 0.25, 1)" })
@@ -556,21 +623,25 @@ export default function ReactionsLayer() {
                     play(el, [{ transform: "scale(0.4)", opacity: 0.9, borderWidth: "14px" }, { transform: `scale(${reach})`, opacity: 0, borderWidth: "3px" }], { duration: 1100, delay: i * 140, easing: "cubic-bezier(0.1, 0.6, 0.3, 1)", fill: "backwards" })
                 })
             }
-            looks.pixels(2)
-            setTimeout(() => looks.pixels(2), 120)
-            setTimeout(() => looks.pixels(2), 260)
-            looks.glitch(2)
-            big.on = true
-            big.start = now
-            big.level = lv.sustain
-            big.until = Math.max(big.until, now + 7000)
-            big.next = Math.max(big.next, big.until + 9000)
+            if (S.show_pixels) {
+                looks.pixels(2)
+                setTimeout(() => looks.pixels(2), 120)
+                setTimeout(() => looks.pixels(2), 260)
+            }
+            if (S.show_title) looks.glitch(2)
+            if (S.fx_thick > 0) {
+                big.on = true
+                big.start = now
+                big.level = lv.sustain
+                big.until = Math.max(big.until, now + 7000)
+                big.next = Math.max(big.next, big.until + 9000 * S.thick_pause)
+            }
         }
         const run_song = (now, dt, lv) => {
             if (!lv.followed) {
                 song.pulse += (1 - song.pulse) * 0.05
                 song.size += (1 - song.size) * 0.05
-                document.documentElement.style.setProperty("--pulse", song.pulse.toFixed(3))
+                document.documentElement.style.setProperty("--pulse", (song.pulse * S.fx_logo).toFixed(3))
                 document.documentElement.style.setProperty("--size", song.size.toFixed(3))
                 if (song.in_break) { song.in_break = false; wall()?.style.removeProperty("opacity") }
                 return
@@ -579,13 +650,13 @@ export default function ReactionsLayer() {
             song.fast += (loud - song.fast) * (1 - Math.exp(-dt / 220))
             song.peak = Math.max(song.peak * Math.exp(-dt / 20000), lv.sustain)
             // quiet for 1.2 s after having been loud: a break
-            if (lv.sustain < 0.28 && song.peak > 0.5) { song.quiet_since = song.quiet_since || now } else { song.quiet_since = 0 }
+            if (lv.sustain < 0.28 * S.break_sens && song.peak > 0.5) { song.quiet_since = song.quiet_since || now } else { song.quiet_since = 0 }
             if (!song.in_break && song.quiet_since && now - song.quiet_since > 1200) {
                 song.in_break = true
                 song.break_at = now
                 song.log.push({ at: Math.round(now), what: "break", sustain: +lv.sustain.toFixed(2) })
                 const el = wall()
-                if (el) el.style.opacity = "0.4"
+                if (el) el.style.opacity = String(S.break_dim)
             }
             // How the sound moves. A build-up is a rise that is close to a straight line for 5 s or more (a riser); a drop
             // is a jump up all at once, and it only counts right after a break or the end of a build-up. A kick on its
@@ -598,17 +669,17 @@ export default function ReactionsLayer() {
                 if (song.hist.length > 40) song.hist.shift()
                 if (song.hist.length >= 20) {
                     const line = fit_line(song.hist.slice(-20), 0.25)
-                    if (line.slope > 0.03 && line.r2 > 0.8 && line.rise > 0.12) {
+                    if (line.slope > 0.03 / S.buildup_sens && line.r2 > 0.8 && line.rise > 0.12 / S.buildup_sens) {
                         if (now - song.ramp_at > 6000) song.log.push({ at: Math.round(now), what: "build-up", slope: +line.slope.toFixed(3), r2: +line.r2.toFixed(2) })
                         song.ramp_at = now
                     }
                 }
             }
             const armed = now - song.ramp_at < 6000
-            const cooled = now - song.drop_at > 8000
+            const cooled = now - song.drop_at > S.drop_cooldown * 1000
             const long_break = song.in_break && now - song.break_at > 1500
             const jump = song.short - song.long
-            if (cooled && (armed || long_break) && jump >= 0.25 && song.short > 0.55) {
+            if (cooled && (armed || long_break) && jump >= 0.25 / S.drop_sens && song.short > clamp(0.55 / S.drop_sens, 0.15, 0.9)) {
                 const el = wall()
                 if (el) el.style.removeProperty("opacity")
                 song.log.push({ at: Math.round(now), what: armed ? "drop (after build-up)" : "drop (after break)", jump: +jump.toFixed(2), level: +song.short.toFixed(2) })
@@ -620,11 +691,11 @@ export default function ReactionsLayer() {
                 if (el) el.style.removeProperty("opacity")
             }
             // very quiet music: the logo's pulse is weaker (1 = normal)
-            const pulse_target = 0.55 + 0.45 * clamp(lv.sustain / 0.35, 0, 1)
+            const pulse_target = S.pulse_min + (1 - S.pulse_min) * clamp(lv.sustain / 0.35, 0, 1)
             song.pulse += (pulse_target - song.pulse) * 0.04
-            document.documentElement.style.setProperty("--pulse", song.pulse.toFixed(3))
+            document.documentElement.style.setProperty("--pulse", (song.pulse * S.fx_logo).toFixed(3))
             // the size of the logo follows how loud it is (a mix of the quick level and the held one)
-            const size_target = 0.9 + 0.22 * clamp((0.5 * song.fast + 0.5 * lv.sustain) / 0.8, 0, 1)
+            const size_target = S.size_min + (S.size_max - S.size_min) * clamp((0.5 * song.fast + 0.5 * lv.sustain) / 0.8, 0, 1)
             song.size += (size_target - song.size) * (1 - Math.exp(-dt / 120))
             document.documentElement.style.setProperty("--size", song.size.toFixed(3))
             song.calm += ((song.in_break ? 1 : 0) - song.calm) * 0.05
@@ -639,7 +710,8 @@ export default function ReactionsLayer() {
             const energy = Math.max(lv[0], lv[1], lv[2] * 0.8)
             const base = root.getBoundingClientRect()
             const badge = document.querySelector(".pixel_logo_gif")
-            stream_debt += dt * (8 + 40 * energy) * (1 - 0.7 * song.calm)
+            const pixel_gain = S.show_pixels ? S.fx_pixels : 0
+            stream_debt += dt * (8 + 40 * energy) * (1 - 0.7 * song.calm) * pixel_gain
             while (stream_debt >= 1) {
                 stream_debt -= 1
                 const el = streams[state.stream++ % streams.length]
@@ -661,11 +733,11 @@ export default function ReactionsLayer() {
                 drift_at = now
                 drifts = document.getAnimations().filter((a) => a.effect && a.effect.target && a.effect.target.classList && a.effect.target.classList.contains("bg-drift") && a.animationName === "bg-diagonal")
             }
-            const spike = 6.5 * Math.exp(-(now - song.drop_at) / 3500) // the grid races after a drop, then settles
-            const rate_target = Math.min(8, (lv.followed ? 1 + 2.4 * Math.max(0, lv.sustain - 0.3) : 1) + spike)
+            const spike = 6.5 * S.fx_drop * Math.exp(-(now - song.drop_at) / 3500) // the grid races after a drop, then settles
+            const rate_target = Math.min(12, (lv.followed ? 1 + 2.4 * S.fx_grid * Math.max(0, lv.sustain - 0.3) : 1) + spike)
             drift_rate += (rate_target - drift_rate) * 0.04
             for (const a of drifts) a.playbackRate = drift_rate
-            floor_debt += dt * (2 + 22 * lv[0] * lv[0] + 6 * lv[1]) * (1 - 0.7 * song.calm)
+            floor_debt += dt * (2 + 22 * lv[0] * lv[0] + 6 * lv[1]) * (1 - 0.7 * song.calm) * pixel_gain
             while (floor_debt >= 1) {
                 floor_debt -= 1
                 const el = floors[state.floor++ % floors.length]
@@ -690,7 +762,7 @@ export default function ReactionsLayer() {
                 const jumped = Math.abs(index - last_index) > 1 // the clock was re-aligned: not a real beat
                 last_index = index
                 if (!jumped) {
-                    if (mod(index, SCENE_BEATS) === 0) {
+                    if (mod(index, Math.max(1, Math.round(S.scene_beats))) === 0) {
                         const next = { kick: pinned.kick && KICKS.includes(pinned.kick) ? scene.kick : pick(KICKS, scene.kick), snare: pinned.snare && SNARES.includes(pinned.snare) ? scene.snare : pick(SNARES, scene.snare), hat: pinned.hat && HATS.includes(pinned.hat) ? scene.hat : pick(HATS, scene.hat) }
                         const next_scene = with_extras(next)
                         clean_wall()
@@ -731,7 +803,9 @@ export default function ReactionsLayer() {
             <div className="fx-line" style={{ right: 0 }}></div>
             <div className="fx-flash"></div>
             {[0, 1, 2].map((i) => <div className="fx-shock" key={i}></div>)}
-            <div className="fx-thick"></div>
+            <div className="fx-thick">
+                {Array.from({ length: 40 }, (_, i) => <div className="fx-streak" key={i}></div>)}
+            </div>
             <div className="fx-laser"></div>
             <div className="fx-laser"></div>
             <div className="fx-laser"></div>

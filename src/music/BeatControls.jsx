@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useState } from "react"
+import { useLocation } from "react-router-dom"
 import { useBeat } from "./useBeat"
 import { useMusic } from "./useMusic"
-import { on_hit } from "./reactor"
+import { toggle_panel, useVizUi } from "./viz-ui"
 
 // Small row at the top of the player: what the beat follows.
 //   auto  follow the tab's sound (asks once to share the tab's sound, then keeps it). Only shown where the browser
@@ -17,15 +18,8 @@ export default function BeatControls() {
     const { mode, bpm, silent, message, taps, auto, tap, set_bpm, nudge, reset } = useBeat()
     const { dock_open } = useMusic()
     const [draft, set_draft] = useState(null) // text while the BPM box is being edited
-    const lights = useRef({ kick: null, snare: null, hat: null }) // the little K and S that blink on every drum hit
-
-    useEffect(
-        () => on_hit((kind) => {
-            const el = lights.current[kind]
-            if (el) el.animate([{ opacity: 1, color: "#ffffff" }, { opacity: 0.35, color: "#0e7490" }], { duration: 220, easing: "ease-out" })
-        }),
-        [],
-    )
+    const { pathname } = useLocation()
+    const { pad } = useVizUi()
 
     // keyboard: T taps, [ and ] move the pulse 10 ms earlier/later (fine tuning for a delay you can hear)
     useEffect(() => {
@@ -81,11 +75,10 @@ export default function BeatControls() {
                 title="Type a BPM and press Enter"
                 className={`h-5 w-14 px-1 text-center text-[11px] leading-none bg-transparent border border-cyan-800 text-cyan-100 placeholder:text-cyan-600 ${mode === "idle" ? "opacity-70" : ""}`}
             />
-            <span className="flex gap-0.5 text-[10px] leading-none text-cyan-700" title="Lights up on every kick (K) and snare (S) the site reacts to. With sound followed, these are real hits heard in the music; otherwise they come from the beat.">
-                <span ref={(el) => (lights.current.kick = el)} style={{ opacity: 0.35 }}>K</span>
-                <span ref={(el) => (lights.current.snare = el)} style={{ opacity: 0.35 }}>S</span>
-                <span ref={(el) => (lights.current.hat = el)} style={{ opacity: 0.35 }}>H</span>
-            </span>
+            {/* manual beat: opens the pad on the home page, where the visualizer is */}
+            {pathname === "/" && (
+                <button type="button" className={`${small} ${pad ? on : ""}`} onClick={() => toggle_panel("pad")} aria-pressed={pad} title="Manual beat: fire the effects by hand" aria-label="manual beat pad">pad</button>
+            )}
             {mode !== "idle" && (
                 <button type="button" className={small} onClick={reset} title="Back to the idle beat (144) and stop listening to the tab" aria-label="reset the beat">×</button>
             )}

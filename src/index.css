@@ -332,6 +332,15 @@ html.drop-void, html.drop-void body {
     box-shadow: 0 0 30px 6px rgba(0, 220, 255, 0.45);
     opacity: 0;
 }
+.fx-streak {
+    position: absolute;
+    top: 50%;
+    width: 3px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0), #bffcff 35%, #ffffff 65%, rgba(255, 255, 255, 0));
+    box-shadow: 0 0 8px 2px rgba(150, 255, 255, 0.75);
+    opacity: 0;
+    pointer-events: none;
+}
 .fx-tint {
     position: absolute;
     inset: 0;
@@ -349,3 +358,6 @@ html.drop-void, html.drop-void body {
 @media (prefers-reduced-motion: reduce) {
     .fx-layer, .fx-beams { display: none; }
 }
+
+/* settings: "logo" switched off -> no beat animation on the logo, its title and its rings */
+html.fx-no-logo .main-logo, html.fx-no-logo .pixel_logo_gif, html.fx-no-logo .beat-rings { animation: none !important; }
