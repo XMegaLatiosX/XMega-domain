@@ -259,23 +259,42 @@ function Header() {
     }
     
 
-    // open/close the div 
+    // open/close the account div; it also closes when the focus or a click goes anywhere else (or on Escape)
+    function set_user_div(open) {
+        const acc_div = document.getElementById("account_div")
+        if (!acc_div) return
+        acc_div.style.height = open ? "144px" : "0px"
+        acc_div.style.width = open ? "256px" : "128px"
+        acc_div.style.opacity = open ? "1" : "0"
+        acc_div.style.pointerEvents = open ? "auto" : "none"
+    }
     function toggle_user_div() {
         const acc_div = document.getElementById("account_div")
-        const is_closed = window.getComputedStyle(acc_div).height === "144px" ? false : true
-        
-        acc_div.style.height = is_closed ? "144px" : "0px"
-        acc_div.style.width = is_closed ? "256px" : "128px"
-        acc_div.style.opacity = is_closed ? "1" : "0"
-        acc_div.style.pointerEvents = is_closed ? "auto" : "none"
-        
+        set_user_div(window.getComputedStyle(acc_div).height !== "144px")
     }
-    
-    
+    useEffect(() => {
+        const leave = (event) => {
+            const acc_div = document.getElementById("account_div")
+            if (!acc_div || acc_div.style.opacity !== "1") return
+            if (event.target instanceof Node && (acc_div.contains(event.target) || document.getElementById("account_toggle")?.contains(event.target))) return
+            set_user_div(false)
+        }
+        const on_key = (event) => { if (event.key === "Escape") set_user_div(false) }
+        document.addEventListener("pointerdown", leave)
+        document.addEventListener("focusin", leave)
+        document.addEventListener("keydown", on_key)
+        return () => {
+            document.removeEventListener("pointerdown", leave)
+            document.removeEventListener("focusin", leave)
+            document.removeEventListener("keydown", on_key)
+        }
+    }, [])
+
+
     return (
         <header className="site-header relative top-0 w-screen h-16 bg-black flex justify-between items-center px-2">
             <div className="h-full flex justify-between space-x-1 items-center gap-2">
-                <a className="border-none" onClick={toggle_side_bar}>
+                <a className="border-none" data-sidebar-toggle onClick={toggle_side_bar}>
                     <img className="pixel-art h-10 w-10" src={side_bar_icon} />
                 </a>
                 <Link to="/" className="h-full flex items-center justify-center">
@@ -291,7 +310,7 @@ function Header() {
                     <a id="is_live_display" target="_blank" href="https://www.twitch.tv/xmegalatiosx"></a>
                 </div>
 
-                <a onClick={toggle_user_div}>
+                <a id="account_toggle" onClick={toggle_user_div}>
                     <img className="pixel-art h-10 w-10 rounded-full" src={profile?.profile_picture || user_icon}/>
                 </a>
             </div>
@@ -313,7 +332,7 @@ function Header() {
                             <img src={profile?.profile_picture || user_icon} className="w-24 h-24" />
                         </div>
                         <div className="flex flex-col items-center gap-1 min-w-0">
-                            <h3 className="font-bold text-xl truncate max-w-32" style={{ color: nick_color }}>{profile?.nickname}</h3>
+                            <h3 className="nick-glow font-bold text-xl truncate max-w-32" style={{ color: nick_color }}>{profile?.nickname}</h3>
                             <label className="flex items-center gap-1.5 text-xs text-cyan-300 cursor-pointer">
                                 nick color
                                 <input type="color" value={nick_color} onChange={change_nick_color} aria-label="nickname colour" className="h-6 w-8 cursor-pointer bg-transparent border border-cyan-700" />

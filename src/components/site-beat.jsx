@@ -12,21 +12,21 @@ export default function SiteBeat() {
             root.style.setProperty("--site-logo", String(S.site_logo))
             root.style.setProperty("--site-flash", String(S.site_flash))
             root.style.setProperty("--site-edges", String(S.site_edges))
+            root.style.setProperty("--site-bg", String(S.site_bg))
         }
         write()
         const stop = subscribe_settings(write)
         return () => {
             stop()
-            for (const name of ["--site-logo", "--site-flash", "--site-edges"]) root.style.removeProperty(name)
+            for (const name of ["--site-logo", "--site-flash", "--site-edges", "--site-bg"]) root.style.removeProperty(name)
         }
     }, [])
     return (
         <div className="site-beat" aria-hidden="true">
+            <div className="site-fill" />
             <div className="site-flash" />
             <div className="site-bar site-bar-l" />
             <div className="site-bar site-bar-r" />
-            <div className="site-pixels" />
-            <div className="site-pixels site-pixels-2" />
         </div>
     )
 }

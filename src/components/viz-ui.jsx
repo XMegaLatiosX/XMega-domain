@@ -393,11 +393,16 @@ function PadPanel() {
 const WIDE = "(min-width: 640px)"
 // full screen button (top right; steps left when the data panel is open there). Not shown where the browser cannot do it (iPhone).
 function useFullscreen() {
+    const { sharing } = useBeat()
     // "full" is the browser's full screen however it started: this button, or F11 (display-mode: fullscreen)
     const read = () => !!document.fullscreenElement || window.matchMedia("(display-mode: fullscreen)").matches
-    const [full, set_full] = useState(read)
+    const [full_browser, set_full] = useState(read)
+    // While the tab's sound is shared, Chrome shrinks a page that asks for its own full screen (the sides get cut), while F11 is fine.
+    // So then the button only hides the header and links (the same layout as full screen) and F11 is the way into the real one.
+    const [layout_only, set_layout_only] = useState(false)
+    const full = full_browser || layout_only
     useEffect(() => {
-        const change = () => set_full(read())
+        const change = () => { const now = read(); set_full(now); if (now) set_layout_only(false) } // F11 took over: it is the real one now
         document.addEventListener("fullscreenchange", change)
         const query = window.matchMedia("(display-mode: fullscreen)")
         query.addEventListener("change", change)
@@ -414,16 +419,31 @@ function useFullscreen() {
         return () => document.documentElement.classList.remove("site-full")
     }, [full])
     const supported = !!document.documentElement.requestFullscreen
-    const toggle = () => { (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()).catch(() => {}) }
-    return { full, supported, toggle }
+    // F11 is the browser's own full screen: a page cannot leave it (and asking for another one on top of it is what made the
+    // page shrink), so then the button only reminds the key. Without F11 it is the page's own full screen.
+    const by_browser = full_browser && !document.fullscreenElement
+    const [hint, set_hint] = useState("")
+    useEffect(() => {
+        if (!hint) return
+        const timer = setTimeout(() => set_hint(""), 2800)
+        return () => clearTimeout(timer)
+    }, [hint])
+    const toggle = () => {
+        if (document.fullscreenElement) document.exitFullscreen().catch(() => {})
+        else if (layout_only) set_layout_only(false)
+        else if (by_browser) set_hint("press F11 to leave") // a page cannot leave the browser's own F11 full screen: say which key does
+        else if (sharing) { set_layout_only(true); set_hint("press F11 for the whole screen") }
+        else document.documentElement.requestFullscreen({ navigationUI: "hide" }).catch(() => {})
+    }
+    return { full, supported, toggle, by_browser, hint, sharing }
 }
 
 function FullscreenButton({ shifted }) {
-    const { full, supported, toggle } = useFullscreen()
+    const { full, supported, toggle, by_browser, hint } = useFullscreen()
     if (!supported) return null
     return (
-        <button type="button" data-music-ui onClick={toggle} aria-label={full ? "leave full screen" : "full screen"} title={full ? "leave full screen (F11)" : "full screen (F11)"}
-            className="absolute top-2 lg:top-12 z-40 h-9 w-9 flex items-center justify-center text-cyan-200 cursor-pointer transition-all duration-300"
+        <button type="button" data-music-ui onClick={toggle} aria-label={full ? "leave full screen" : "full screen"} title={by_browser ? "press F11 to leave full screen" : full ? "leave full screen" : "full screen"}
+            className="absolute top-2 lg:top-12 z-[45] h-9 w-9 flex items-center justify-center text-cyan-200 cursor-pointer transition-all duration-300"
             style={{ right: shifted ? "18.75rem" : "0.5rem", opacity: 0.75, top: full ? "0.5rem" : undefined }}
             onMouseEnter={(event) => { event.currentTarget.style.opacity = "1" }} onMouseLeave={(event) => { event.currentTarget.style.opacity = "0.75" }}>
             <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="2" shapeRendering="crispEdges">
@@ -431,6 +451,7 @@ function FullscreenButton({ shifted }) {
                     ? <path d="M8 2v6H2M14 2v6h6M8 20v-6H2M14 20v-6h6" />
                     : <path d="M2 8V2h6M14 2h6v6M2 14v6h6M20 14v6h-6" />}
             </svg>
+            {hint && <span className="absolute right-full mr-2 whitespace-nowrap border border-cyan-700 bg-black px-2 py-1 text-xs text-cyan-200 pixel-font">{hint}</span>}
         </button>
     )
 }
@@ -454,7 +475,7 @@ export default function VizUi() {
     return (
         <>
             {/* top left: faint gear, its menu and the two panels it turns on */}
-            <div className="absolute top-2 left-2 z-40 flex flex-col items-start gap-2 max-h-[calc(100%-1rem)] overflow-y-auto" data-music-ui>
+            <div className="absolute top-2 left-2 z-[45] flex flex-col items-start gap-2 max-h-[calc(100%-1rem)] overflow-y-auto" data-music-ui>
                 <div className="flex items-start gap-1">
                     <button
                         type="button" aria-label="visualizer tools" aria-expanded={menu} title="visualizer tools"
@@ -477,13 +498,13 @@ export default function VizUi() {
             <FullscreenButton shifted={data && wide} />
             {/* top right (wide screens): the data panel, scrolls by itself and leaves room for the manual beat pad when that is open */}
             {data && wide && (
-                <div className="absolute top-2 lg:top-12 right-2 z-40 overflow-y-auto" style={{ maxHeight: pad ? "calc(100% - 18rem)" : "calc(100% - 3.5rem)" }} data-music-ui>
+                <div className="absolute top-2 lg:top-12 right-2 z-[45] overflow-y-auto" style={{ maxHeight: pad ? "calc(100% - 18rem)" : "calc(100% - 3.5rem)" }} data-music-ui>
                     <DataPanel />
                 </div>
             )}
             {/* bottom right: the manual beat pad (the "pad" button in the player opens it) */}
             {pad && (
-                <div className="absolute bottom-3 right-2 z-40" data-music-ui>
+                <div className="absolute bottom-3 right-2 z-[45]" data-music-ui>
                     <PadPanel />
                 </div>
             )}

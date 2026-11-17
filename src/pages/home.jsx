@@ -13,11 +13,11 @@ import ReactionsLayer, { BackBeams } from '../components/reactions-layer'
 import LogoBars from '../components/logo-bars'
 import TapAnywhere from '../components/tap-anywhere'
 import VizUi from '../components/viz-ui'
-import Mural from '../components/mural'
+import Chat from '../components/chat'
 import { useVizUi } from '../music/viz-ui'
 
 export default function Home() {
-    const { data, pad } = useVizUi() // the mural steps aside when the data panel or the pad is open on the right
+    const { data, pad } = useVizUi() // the chat steps aside when the data panel or the pad is open on the right
     return (
         <Screen>
             <Header></Header>
@@ -33,7 +33,7 @@ export default function Home() {
                     {/* reacts to the drums: lines, lasers and changes in the wall (see the file for the list of looks) */}
                     <ReactionsLayer></ReactionsLayer>
 
-                    <div className="logo-stage flex w-full absolute h-full top-[calc(50vh-10rem)] sm:top-[calc(50vh-4.1rem)] -translate-y-1/2 items-center justify-center">
+                    <div className="logo-stage flex w-full absolute h-full top-1/2 sm:top-[calc(50vh-4.1rem)] -translate-y-1/2 items-center justify-center">
                         <LogoBars></LogoBars>
                         <div className="beat-rings" aria-hidden="true"></div>
                         <img src={star_icon_gif} className=" select-none pixel_logo_gif"/>
@@ -45,8 +45,8 @@ export default function Home() {
                 <TapAnywhere></TapAnywhere>
                 {/* faint gear (top left): data and settings panels, and the manual beat pad */}
                 <VizUi></VizUi>
-                {/* live wall: last messages from visitors (needs supabase/mural.sql run once) */}
-                <Mural shifted={data || pad}></Mural>
+                {/* live wall: last messages from visitors (needs supabase/mural-split.sql run once) */}
+                <Chat shifted={data || pad}></Chat>
                 <HomeSearch></HomeSearch>
 
                 <div id="twitch_embed">

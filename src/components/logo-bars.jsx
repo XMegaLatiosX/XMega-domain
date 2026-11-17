@@ -1,5 +1,7 @@
 import { useEffect, useRef } from "react"
 import { get_bars } from "../music/reactor"
+import { useBeat } from "../music/useBeat"
+import { fake_levels } from "../music/fake-bands"
 
 // A ring of frequency bars around the central logo, drawn with the same 24 bands the rest of the page reacts to: the lowest band on the left,
 // going round to the highest, and back (so the ring is not symmetric). Flat thick cyan bars, with a thinner dark-blue "sub-bar" between every two,
@@ -12,14 +14,19 @@ const RIM = Array.from({ length: COUNT * 2 }, (_, i) => 0.05 + 0.07 * (0.5 + 0.5
 
 export default function LogoBars() {
     const canvas = useRef(null)
+    const { get_clock } = useBeat()
+    const clock = useRef(get_clock)
+    useEffect(() => { clock.current = get_clock }, [get_clock])
     useEffect(() => {
         const el = canvas.current
         if (!el || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
         const ctx = el.getContext("2d")
         const shown = new Float32Array(COUNT)
+        const touch = window.matchMedia("(pointer: coarse)").matches
         let badge = null
         let raf = 0
         let last = 0
+        let dt = 33
         const fit = () => {
             const dpr = Math.min(2, window.devicePixelRatio || 1)
             el.width = Math.round(el.clientWidth * dpr)
@@ -33,13 +40,22 @@ export default function LogoBars() {
             const root = document.documentElement
             const off = root.classList.contains("rhythm-off") || root.classList.contains("perf-low")
             if (now - last < 30) return // about 30 frames a second is plenty
+            dt = Math.min(100, now - (last || now))
             last = now
             const w = el.width
             ctx.clearRect(0, 0, w, el.height)
             if (off) return
-            const levels = get_bars()
+            let levels = get_bars()
             let energy = 0
             for (let i = 0; i < 24; i++) energy += levels[i] || 0
+            // a phone cannot listen to the page's sound, so there are no real bands: while a tempo is set the bars move on the beat instead
+            // (a pretend drum pattern, see music/fake-bands.js), so the ring is not just empty
+            if (energy <= 0.05 && touch && root.hasAttribute("data-beat-on") && root.getAttribute("data-beat") !== "analyzing") {
+                const { beat_ms, anchor_perf } = clock.current()
+                const phase = (performance.now() - anchor_perf) / beat_ms
+                levels = fake_levels(phase)
+                energy = 24
+            }
             const scale = w / el.clientWidth
             const radius = (el.clientWidth / 2.1 / 2) * scale // the badge is 1/2.1 of the canvas
             // how big the badge is right now (its beat pulse is a scale transform)
@@ -52,12 +68,15 @@ export default function LogoBars() {
             for (let k = 0; k < COUNT; k++) {
                 const m = k < half ? k : COUNT - 1 - k // mirrored: both sides show the same band
                 const band = Math.min(23, Math.floor((m / half) * 24))
-                shown[k] = energy > 0.05 ? 0.06 + 0.94 * Math.min(1, levels[band] || 0) : 0
+                const target = energy > 0.05 ? 0.06 + 0.94 * Math.min(1, levels[band] || 0) : 0
+                // a little smoothing, only to take away the feeling of lag: a hit still lands at once, the fall is eased over about 60 ms
+                shown[k] = shown[k] + (target - shown[k]) * (1 - Math.exp(-dt / (target >= shown[k] ? 25 : 55)))
             }
             const slot = (2 * Math.PI * inner) / COUNT
             const draw = (angle, thickness, height, from, outline) => {
                 if (height < 2 * scale) return
                 ctx.save()
+                ctx.globalAlpha = 0.6
                 ctx.translate(w / 2, el.height / 2)
                 ctx.rotate(angle)
                 ctx.fillStyle = from
@@ -86,7 +105,7 @@ export default function LogoBars() {
     }, [])
 
     return (
-        <div className="absolute w-[45%] sm:w-[30%] aspect-square translate-y-2 pointer-events-none" aria-hidden="true">
+        <div className="absolute w-[45%] sm:w-[26%] aspect-square translate-y-2 pointer-events-none" aria-hidden="true">
             <canvas ref={canvas} className="absolute w-[210%] h-[210%] -left-[55%] -top-[55%]" />
         </div>
     )

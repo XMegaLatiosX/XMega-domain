@@ -9,6 +9,7 @@ import Blog_post from './pages/blog/post'
 import Modal from './components/modal'
 import Settings from './pages/settings'
 import Music from './pages/music'
+import MuralPage from './pages/mural'
 import Feedback from './pages/feedback'
 import CreatePost from './pages/blog/create-post'
 import Self_improvement from './pages/self-improvement/self_improvement'
@@ -32,6 +33,7 @@ function App() {
             <Route path="/about" element={<About/>} />
 
             <Route path="/music" element={<Music/>} />
+            <Route path="/mural" element={<MuralPage/>} />
 
             <Route path="/blog" element={<Blog/>} />
             <Route path="/blog/create-post" element={<CreatePost/>}>

@@ -11,7 +11,7 @@ import photos_thumbnail from "../../assets/images/photos_thumbnail.png"
 // A folder: the picture fills the card, the name sits on it over a dark fade so it always reads.
 function Categorie({ name, note, src, to }) {
     return (
-        <Link to={to} className="group relative block aspect-[4/5] overflow-hidden border-2 border-cyan-900 bg-gray-950 hover:border-cyan-400 transition-colors">
+        <Link to={to} className="group relative block card-beat aspect-[4/5] overflow-hidden border-2 border-cyan-900 bg-gray-950 hover:border-cyan-400 transition-colors">
             <img src={src} alt="" className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition duration-300" />
             <div className="absolute inset-x-0 bottom-0 px-3 pb-3 pt-14 bg-gradient-to-t from-black via-black/70 to-transparent">
                 <h2 className="pixel-font text-xl sm:text-2xl text-cyan-300 [text-shadow:0_2px_0_#000]">{name}</h2>

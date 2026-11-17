@@ -112,7 +112,7 @@ function SkillEditor({ user, skill, on_saved, on_cancel }) {
                 </label>
             </div>
 
-            <textarea value={description} onChange={(event) => set_description(event.target.value)} className={`${field} min-h-24`} placeholder="what is this skill, and what does getting better at it mean?" />
+            <textarea value={description} onChange={(event) => set_description(event.target.value)} className={`${field} min-h-24`} placeholder="description *optional: what is this skill, and what does getting better at it mean?" />
 
             <div className="flex items-end gap-3">
                 <PictureInput label="where I am" preview={previews.current} on_pick={(file) => pick("current", file)} />
@@ -128,7 +128,7 @@ function SkillEditor({ user, skill, on_saved, on_cancel }) {
                             <input value={trait.name} onChange={(event) => edit_trait(trait.id, { name: event.target.value })} className={field} placeholder="name, ex: Perspective" maxLength={60} />
                             <button type="button" onClick={() => remove_trait(trait.id)} className="px-3 border border-red-800 text-red-400 hover:bg-red-950 cursor-pointer" aria-label="remove trait">×</button>
                         </div>
-                        <input value={trait.description} onChange={(event) => edit_trait(trait.id, { description: event.target.value })} className={field} placeholder="description, ex: how well do I convey depth?" />
+                        <input value={trait.description} onChange={(event) => edit_trait(trait.id, { description: event.target.value })} className={field} placeholder="description *optional, ex: how well do I convey depth?" />
                         <RatingSlider value={trait.self_rating ?? 50} on_change={(value) => edit_trait(trait.id, { self_rating: value })} />
                     </div>
                 ))}
@@ -214,11 +214,11 @@ function Self_improvement() {
                     <p className="mt-2 mb-8 text-cyan-700 text-center">rate where you are, pick where you want to be, and watch it move</p>
 
                     <div className="w-full max-w-3xl flex flex-col gap-6">
-                        {!user && <p className="text-center text-cyan-600">create an account (top right of the header) to track your own skills, or look at mine: <button className="text-cyan-300 underline cursor-pointer" onClick={() => navigate("/self-improvement/xmega latiosx")}>XMega skills</button></p>}
+                        {!user && <p className="text-center text-cyan-600">create an account (top right) to track your own skills. Or use the search at the top right to look up someone and see how it works.</p>}
                         {user && load_error && <p className="text-center text-red-400">could not load your skills, try again in a moment.</p>}
                         {user && skills === null && !load_error && <p className="text-center text-cyan-700">loading…</p>}
                         {user && skills?.length === 0 && editing !== "new" && (
-                            <p className="text-center text-cyan-600">no skills yet, create one below. For an example, look at <button className="text-cyan-300 underline cursor-pointer" onClick={() => navigate("/self-improvement/xmega latiosx")}>XMega skills</button>.</p>
+                            <p className="text-center text-cyan-600">no skills yet, create one below. To see an example, search for someone at the top right.</p>
                         )}
 
                         {skills?.map((skill) => editing === skill.id

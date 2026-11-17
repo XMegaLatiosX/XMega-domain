@@ -80,7 +80,7 @@ export default function MusicDock() {
                     <ControlButton label="previous" onClick={prev}>⏮</ControlButton>
                     <ControlButton label={playing ? "pause" : "play"} onClick={toggle}>{playing ? "⏸" : "▶"}</ControlButton>
                     <ControlButton label="next" onClick={next}>⏭</ControlButton>
-                    <ControlButton label={autoplay ? "autoplay on: a similar song plays when this one ends (uses the YouTube search quota). Click to turn off" : "autoplay off. Click to turn on"} onClick={() => set_autoplay(!autoplay)}><span className={autoplay ? "text-cyan-200" : "text-cyan-800 line-through"}>∞</span></ControlButton>
+                    <span className="hidden sm:contents"><ControlButton label={autoplay ? "autoplay on: a similar song plays when this one ends (uses the YouTube search quota). Click to turn off" : "autoplay off. Click to turn on"} onClick={() => set_autoplay(!autoplay)}><span className={autoplay ? "text-cyan-200" : "text-cyan-800 line-through"}>∞</span></ControlButton></span>
                     <button
                         type="button" aria-label={volume === 0 ? "unmute" : "mute"}
                         onClick={() => {

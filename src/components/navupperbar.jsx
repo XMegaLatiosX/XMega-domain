@@ -18,6 +18,7 @@ function UpperBarButton({ label, to }) {
 const LINKS = [
     { to: "/", label: "home" },
     { to: "/about", label: "about" },
+    { to: "/mural", label: "mural" },
     { to: "/blog", label: "blog" },
     { to: "/music", label: "music" },
     { to: "/gallery", label: "gallery" },

@@ -51,6 +51,7 @@ const SYNCED = new Set(["beat", "pulseRing", "site_pulse", "site_flash", "site_b
 export default function BeatProvider({ children }) {
     const { pathname } = useLocation()
     const [info, set_info] = useState({ mode: "idle", bpm: DEFAULT_BPM, silent: false, message: "", taps: 0 })
+    const [sharing, set_sharing] = useState(false) // the tab's sound is being shared (a capture session is open)
     const [nudge_ms, set_nudge_ms] = useState(read_nudge)
     const [lag, set_lag_state] = useState(read_lag)
     const lag_ref = useRef(lag)
@@ -148,6 +149,7 @@ export default function BeatProvider({ children }) {
     function stop_capture() {
         const current = session.current
         session.current = null
+        set_sharing(false)
         if (!current) return
         current.worker.postMessage({ type: "stop" })
         current.worker.terminate()
@@ -292,6 +294,7 @@ export default function BeatProvider({ children }) {
         worker.postMessage({ type: "settings", values: worker_values() })
         const stop_settings = subscribe_settings(() => worker.postMessage({ type: "settings", values: worker_values() }))
         session.current = { worker, audio, latency, chain, groove_timer, stop_settings }
+        set_sharing(true)
         audio.addEventListener("ended", () => {
             if (session.current && session.current.audio === audio) reset()
         })
@@ -458,6 +461,6 @@ export default function BeatProvider({ children }) {
     // stop listening when the whole site goes away
     useEffect(() => () => stop_capture(), [])
 
-    const value = { ...info, nudge_ms, lag, set_lag, get_clock, ask_once, track_changed, auto, tap, set_bpm, nudge, reset }
+    const value = { ...info, sharing, nudge_ms, lag, set_lag, get_clock, ask_once, track_changed, auto, tap, set_bpm, nudge, reset }
     return <BeatContext.Provider value={value}>{children}</BeatContext.Provider>
 }

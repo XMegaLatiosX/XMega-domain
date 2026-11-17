@@ -4,7 +4,7 @@
 export function RatingBar({ value, small = false }) {
     const rating = Math.max(0, Math.min(100, Number(value) || 0))
     const filled = rating / 10
-    const color = rating >= 80 ? "bg-cyan-400" : rating >= 60 ? "bg-green-500" : rating >= 40 ? "bg-yellow-400" : rating >= 20 ? "bg-orange-500" : "bg-red-500"
+    const color = "bg-cyan-400" // always cyan: nobody should read a low number as "bad", many people are just starting
     return (
         <div className="flex items-center gap-2 w-full" role="img" aria-label={`${rating / 10} out of 10`}>
             <div className={`flex gap-[3px] grow ${small ? "h-3" : "h-5"}`}>

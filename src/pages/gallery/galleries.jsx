@@ -148,10 +148,13 @@ function Gallery() {
             <Sidebar/>
             <main className="relative w-screen h-[calc(100vh-6.5rem)] overflow-auto pt-2">
                 <div className="w-full max-w-7xl mx-auto px-3 pt-4 pb-24">
-                    <div className="flex items-baseline gap-3 mb-4 border-b border-cyan-900 pb-2">
-                        <Link to="/gallery" className="text-cyan-600 hover:text-cyan-300 text-sm">← gallery</Link>
-                        <h1 className="pixel-font text-2xl text-cyan-300">{TITLES[category] || category}</h1>
-                        <span className="ml-auto text-xs text-cyan-700">{medias.length} {medias.length === 1 ? "piece" : "pieces"}</span>
+                    <div className="relative flex items-center justify-center mb-4 border-b border-cyan-900 pb-3 min-h-10">
+                        <Link to="/gallery" className="absolute left-0 flex items-center gap-2 h-9 px-3 border-2 border-cyan-900 text-cyan-500 hover:border-cyan-400 hover:text-cyan-200 hover:bg-cyan-950/40 transition-colors" aria-label="back to the gallery">
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" shapeRendering="crispEdges"><path d="M9 2L4 7l5 5" /></svg>
+                            <span className="pixel-font text-sm hidden sm:inline">gallery</span>
+                        </Link>
+                        <h1 className="pixel-font text-2xl text-cyan-300 text-center">{TITLES[category] || category}</h1>
+                        <span className="absolute right-0 text-xs text-cyan-700">{medias.length} {medias.length === 1 ? "piece" : "pieces"}</span>
                     </div>
                     {medias.length === 0 && <p className="text-cyan-700 text-sm">nothing here yet.</p>}
                     <div className="columns-2 md:columns-3 xl:columns-4 gap-3">

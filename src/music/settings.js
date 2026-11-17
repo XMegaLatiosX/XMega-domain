@@ -56,7 +56,8 @@ export const SCHEMA = [
     n("song", "break_sens", "break sensitivity", 1, 0, 50, 0.1, "higher = a break is called at a higher volume. 0 = never"),
     n("song", "break_dim", "break wall opacity", 0.4, 0, 1, 0.05, "how visible the images stay in a break"),
     n("song", "hold_zoom", "open space: shrink", 0.5, 0, 0.5, 0.01, "how much the wall images shrink (0.5 = half size) in the open space, which comes in a drop: the images get small and far apart. The page itself never changes size. 0 = off"),
-    n("song", "hold_bars", "open space: bars", 4, 1, 32, 1, "how many bars (4 beats each) the open space lasts after a drop"),
+    n("song", "hold_bars", "open space: bars (at least)", 8, 1, 64, 1, "the open space lasts at least this many bars (4 beats each) after a drop"),
+    n("song", "hold_bars_max", "open space: bars (at most)", 16, 1, 64, 1, "and at most this many: each drop picks a number between the two"),
     n("song", "hold_speed", "open space: image speed", 2.5, 1, 8, 0.1, "how much faster the images move while it is open (1 = same speed)"),
     n("song", "hold_in", "open space: in (s)", 0.8, 0.2, 30, 0.1, "how long the shrink takes (a straight line)"),
     n("song", "hold_out", "open space: back (s)", 3, 0.2, 60, 0.5, "how long the return takes (a straight line)"),
@@ -104,7 +105,8 @@ export const SCHEMA = [
     // ---- whole site
     n("site", "site_logo", "header logo", 1, 0, 50, 0.1, "how hard the logo in the header hits on every beat"),
     n("site", "site_flash", "screen glow", 1, 0, 50, 0.1, "the faint glow that breathes at the edge of the screen"),
-    n("site", "site_edges", "edge pixels and bars", 1, 0, 50, 0.1, "the row of pixels along the bottom and the bars on both sides"),
+    n("site", "site_bg", "background flash", 1, 0, 50, 0.1, "the whole background blinking softly on the beat (0 = off)"),
+    n("site", "site_edges", "edge bars", 1, 0, 50, 0.1, "the bars on both sides of the screen"),
     // ---- forced four on the floor
     n("forced", "loud_on", "loud above", 0.45, 0, 1, 0.05, "only when the sound is at least this loud", "provider"),
     n("forced", "reject_ratio", "rejected vs passed", 1.5, 0, 20, 0.1, "hits thrown away this many times more than passed counts as messy", "provider"),

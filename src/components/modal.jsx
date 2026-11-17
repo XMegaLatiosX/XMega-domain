@@ -119,10 +119,10 @@ function Modal() {
         <div className="fixed top-16 left-0 w-screen h-[calc(100vh-4rem)] z-50 flex items-center justify-center p-3" id="modal_bg">
             <div className="absolute inset-0 backdrop-blur-sm bg-[#030712d9]" onClick={close}></div>
 
-            <div className="relative flex flex-col items-stretch" id="modal_div">
+            <div className="relative flex flex-col items-stretch max-h-full overflow-y-auto" id="modal_div">
                 {/* the frame always has the same size, whatever the picture: small ones are scaled up to fill it, big ones shrink to fit,
                     so the close / previous / next buttons never move */}
-                <div className="relative border-2 border-cyan-700 bg-black shadow-[0_0_24px_rgba(34,211,238,0.2)] w-[min(94vw,68rem)] h-[min(72vh,44rem)]">
+                <div className="relative border-2 border-cyan-700 bg-black shadow-[0_0_24px_rgba(34,211,238,0.2)] w-[min(94vw,68rem)] h-[min(54vh,44rem)] sm:h-[min(72vh,44rem)]">
                     {fancy && piece && <LoadingLogo key={piece.url} done={loaded} />}
                     {piece?.file_type === "image"
                         ? <img key={piece.url} id="modal_img" className={`block w-full h-full object-contain transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`} style={crisp ? { imageRendering: "pixelated" } : undefined} src={piece?.url} alt={piece?.name} ref={(el) => { if (el?.complete && el.naturalWidth && !loaded) { remember_size(el); set_loaded_url(piece.url) } }} onLoad={(event) => { remember_size(event.currentTarget); set_loaded_url(piece.url) }} onError={() => set_loaded_url(piece.url)} />

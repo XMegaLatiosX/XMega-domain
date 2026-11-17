@@ -43,9 +43,8 @@ function SearchBar({placeholder, onChanged, onSearch, results, onInteract}) {
 
             {is_open && results && (
                 <div className="relative -top-3.5 pt-3.5 w-full max-h-52 flex flex-col overflow-auto bg-gray-900 shadow-md shadow-black">
-                    <div className="h-6 flex flex-row justify-between items-center px-2 py-4">
+                    <div className="h-6 flex flex-row items-center px-2 py-4">
                         <span className="">nickname:</span>
-                        <span className="text-right">skills count:</span>
                     </div>
                     <hr className="text-gray-700 mx-2"/>
                     {
@@ -53,9 +52,8 @@ function SearchBar({placeholder, onChanged, onSearch, results, onInteract}) {
                         
                         return (
                             <a className="flex flex-col hover:bg-gray-800 cursor-pointer" key={result.nickname} onClick={()=> onInteract(result.nickname)}>
-                                <div className="h-10 flex flex-row justify-around items-center">
-                                    <span className="w-48">{result.nickname}</span>
-                                    <span className="w-4">{result.skill_count}</span>
+                                <div className="h-10 flex flex-row items-center px-2">
+                                    <span className="truncate">{result.nickname}</span>
                                 </div>
                                 <hr className="text-gray-700 mx-2"/>
                             </a>

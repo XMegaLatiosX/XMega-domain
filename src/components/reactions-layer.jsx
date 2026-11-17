@@ -626,7 +626,8 @@ export default function ReactionsLayer() {
             song.drop_at = now
             song.in_break = false
             song.calm = 0
-            zoom.open_until = now + Math.max(1, S.hold_bars) * 4 * beat_ref.current.get_clock().beat_ms // the open space stays for a few bars
+            const bars_low = Math.max(1, S.hold_bars), bars_high = Math.max(bars_low, S.hold_bars_max)
+            zoom.open_until = now + (bars_low + Math.random() * (bars_high - bars_low)) * 4 * beat_ref.current.get_clock().beat_ms // the open space stays for a few bars
             if (!(S.fx_drop > 0) || !rhythm_on()) return // drops are logged and keep their cooldown, but nothing happens
             if (flash_el && flash_ok()) play(flash_el, [{ opacity: Math.min(1, 0.8 * S.flash_power) }, { opacity: 0 }], { duration: 500, easing: "ease-out" })
             // no zoom-out in a drop (it was too heavy): the stars still stream past and the frame flashes cyan

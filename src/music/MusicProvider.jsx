@@ -50,6 +50,14 @@ export default function MusicProvider({ children }) {
     const [link, set_link] = useState("")
     const sc_progress = useRef({ pos: 0, dur: 0 })
 
+    // On a phone the browser may block a song from starting by itself (SoundCloud above all): if nothing plays a few seconds after a song was
+    // asked for, open the player and say what to do.
+    useEffect(() => {
+        if (!started || playing || !link || !window.matchMedia("(pointer: coarse)").matches) return
+        const timer = setTimeout(() => { set_dock_open(true); set_message("your phone blocks autoplay: press ▶ on the player to start") }, 3500)
+        return () => clearTimeout(timer)
+    }, [started, playing, link])
+
     // Controls close whenever the visitor changes page (music keeps playing).
     const { pathname } = useLocation()
     const [last_path, set_last_path] = useState(pathname)
@@ -387,7 +395,7 @@ export default function MusicProvider({ children }) {
     })
 
     const value = useMemo(() => ({
-        playing, title, link, loading, message, started, dock_open, volume, queue_size,
+        playing, title, link, loading, message: playing && message.startsWith("your phone blocks") ? "" : message, started, dock_open, volume, queue_size,
         autoplay, set_autoplay,
         set_dock_open, set_message, play_input, toggle, next, prev, set_volume, get_progress, seek,
     }), [playing, title, link, loading, message, started, dock_open, volume, queue_size, autoplay, set_autoplay, play_input, toggle, next, prev, set_volume, get_progress, seek])
