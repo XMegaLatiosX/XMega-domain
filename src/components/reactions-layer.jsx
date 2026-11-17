@@ -2,6 +2,8 @@ import { useEffect, useRef } from "react"
 import { useBeat } from "../music/useBeat"
 import { emit_hit, on_hit, get_bands, get_tone } from "../music/reactor"
 import { S, subscribe_settings } from "../music/settings"
+import { rhythm_on, streak_factor } from "../music/perf"
+import { register_manual, thick as manual_thick } from "../music/manual"
 
 // Visual reactions to the drums, for the home page.
 //
@@ -34,6 +36,8 @@ const WALL_LOOKS = new Set(["checker", "shove", "flash", "slide", "lanes", "colu
 const TITLE_LOOKS = new Set(["glitch", "blink"])
 const PIXEL_LOOKS = new Set(["pixels", "sparks"])
 const LASER_LOOKS = new Set(["laser", "tick", "lines"])
+// the big laser's strength, 0 when rhythm is switched off
+const fx_thick = () => (rhythm_on() ? S.fx_thick : 0)
 const MIN_GAP_MS = 25 // the same kind of hit never reacts twice within this (keeps a silly sensitivity from burying the page)
 
 const clamp = (value, low, high) => Math.min(high, Math.max(low, value))
@@ -456,6 +460,7 @@ export default function ReactionsLayer() {
 
         const last_hit = { kick: 0, snare: 0, hat: 0 }
         const hit = (kind, strength) => {
+            if (!rhythm_on()) return
             // the strength of this kind (settings: fx_kick, fx_snare, fx_hat): 0 = off, below 1 = weaker and rarer
             const sens = S[`fx_${kind}`]
             if (!(sens > 0) || (sens < 1 && Math.random() > sens)) return
@@ -472,6 +477,7 @@ export default function ReactionsLayer() {
             if (kind === "snare" && S.show_title) title_swap()
         }
         const stop_hits = on_hit(hit)
+        let stop_manual = () => {}
 
         // one step per beat of the clock: a new look every 16 beats, and the made-up hits when no sound is being followed
         let last_index = null
@@ -489,10 +495,16 @@ export default function ReactionsLayer() {
         const demo = params.get("thick") === "demo"
         const OMEGA_MAX = 70 // degrees per second
         const ALPHA = 40 // degrees per second, every second
+        const zoom = { level: 0, open: false, open_until: 0, busy_open: false, busy_since: 0, calm_since: 0, shown: "" } // open space: how far in (0..1), the state, and since when the laser has been up / down
         const run_big = (now, dt, lv) => {
             if (!thick) return
-            if (big.on && S.fx_thick <= 0) big.on = false
-            if (!big.on && S.fx_thick > 0 && now > big.next && (demo || (lv.followed && lv.sustain > 0.5))) {
+            if (manual_thick.on && fx_thick() > 0) {
+                if (!big.on) { big.on = true; big.start = now; big.level = 0.6 }
+                big.until = now + 1500
+                big.next = Math.max(big.next, now + 8000)
+            }
+            if (big.on && fx_thick() <= 0) big.on = false
+            if (!big.on && fx_thick() > 0 && now > big.next && (demo || (lv.followed && lv.sustain > 0.5))) {
                 big.on = true
                 big.start = now
                 big.level = lv.sustain
@@ -515,28 +527,50 @@ export default function ReactionsLayer() {
                 big.spin_until = now + 2500 + Math.random() * 2000
                 big.cool = big.spin_until + 1000
             }
-            const target_omega = now < big.spin_until ? big.dir * OMEGA_MAX : 0
+            const target_omega = manual_thick.on ? big.dir * OMEGA_MAX * manual_thick.amount : now < big.spin_until ? big.dir * OMEGA_MAX : 0
             const step = ALPHA * (dt / 1000)
             big.omega += Math.max(-step, Math.min(step, target_omega - big.omega))
             big.angle += big.omega * (dt / 1000)
             big.phase += (dt / 1000) * 0.7
+            // "Open space": the wall images shrink to a fixed size, far apart, and move faster; the page itself always fills the screen.
+            // It opens in a drop and stays open for hold_bars bars (or, with hold_busy, while the big laser has been up for a while).
+            // Only two states, "normal" and "open", and the change between them is a straight line in time, so it never wobbles.
+            const stage = root.parentElement
+            const depth_max = clamp(S.hold_zoom, 0, 0.5)
+            if (big.on) { zoom.calm_since = 0; if (!zoom.busy_since) zoom.busy_since = now } else { zoom.busy_since = 0; if (!zoom.calm_since) zoom.calm_since = now }
+            if (!S.hold_busy) zoom.busy_open = false
+            else if (!zoom.busy_open && zoom.busy_since && now - zoom.busy_since > S.hold_wait * 1000) zoom.busy_open = true
+            else if (zoom.busy_open && zoom.calm_since && now - zoom.calm_since > S.hold_leave * 1000) zoom.busy_open = false
+            zoom.open = rhythm_on() && depth_max > 0.001 && (S.hold_force || now < zoom.open_until || zoom.busy_open)
+            zoom.level = clamp(zoom.level + (zoom.open ? dt / (Math.max(0.2, S.hold_in) * 1000) : -dt / (Math.max(0.2, S.hold_out) * 1000)), 0, 1)
+            const key = `${depth_max}|${zoom.level.toFixed(3)}`
+            if (stage && zoom.shown !== key) {
+                zoom.shown = key
+                stage.style.setProperty("--zoom-items", (1 - depth_max * zoom.level).toFixed(4))
+                stage.style.setProperty("--zoom-logo", (1 - depth_max * 0.5 * zoom.level).toFixed(4)) // the logo shrinks half as much
+                stage.style.setProperty("--open-level", zoom.level.toFixed(3))
+            }
             if (big.fade < 0.01) { thick.style.opacity = "0"; return }
             const badge = document.querySelector(".pixel_logo_gif")
+            let logo_diameter = Infinity
             if (badge) {
                 const box = badge.getBoundingClientRect()
+                logo_diameter = Math.min(badge.offsetWidth, badge.offsetHeight) * (1 - depth_max * 0.5 * zoom.level) // layout size (not changed by the logo's own pulse), times the open-space shrink of the logo
                 const base = root.getBoundingClientRect()
                 thick.style.left = `${box.left + box.width / 2 - base.left}px`
                 thick.style.top = `${box.top + box.height / 2 - base.top}px`
             }
             const opening = 260 * Math.exp(-(now - big.start) / 1600) // starts extra thick and settles
             const phone = clamp(window.innerWidth / 900, 0.3, 1) // thinner on a phone
-            const width = S.fx_thick * phone * (120 + 110 * (0.5 + 0.5 * Math.sin(big.phase)) + 80 * lv[0] + opening)
+            const hand = manual_thick.on ? 0.35 + 1.65 * manual_thick.amount : 1
+            // never wider than 95% of the logo's diameter, whatever the settings
+            const width = Math.min(0.95 * logo_diameter, hand * fx_thick() * phone * (120 + 110 * (0.5 + 0.5 * Math.sin(big.phase)) + 80 * lv[0] + opening))
             thick.style.width = `${width.toFixed(0)}px`
             thick.style.marginLeft = `${(-width / 2).toFixed(0)}px`
             thick.style.transform = `rotate(${big.angle.toFixed(2)}deg)`
             thick.style.opacity = big.fade.toFixed(3)
             // the streaks are children of the beam, so they turn with it and fade with it
-            streak_debt = Math.min(6, streak_debt + (dt / 1000) * (12 + 26 * lv[0]) * big.fade * Math.min(S.fx_streaks, 4))
+            streak_debt = Math.min(6, streak_debt + (dt / 1000) * (12 + 26 * lv[0]) * big.fade * Math.min(S.fx_streaks, 4) * streak_factor())
             const reach = Math.hypot(window.innerWidth, window.innerHeight) * 0.7
             while (streak_debt >= 1 && streaks.length) {
                 streak_debt -= 1
@@ -587,30 +621,22 @@ export default function ReactionsLayer() {
             }
             setTimeout(() => holder.remove(), 3400)
         }
+        let last_lv = null
         const do_drop = (now, lv) => {
             song.drop_at = now
             song.in_break = false
             song.calm = 0
-            if (!(S.fx_drop > 0)) return // drops are logged and keep their cooldown, but nothing happens
+            zoom.open_until = now + Math.max(1, S.hold_bars) * 4 * beat_ref.current.get_clock().beat_ms // the open space stays for a few bars
+            if (!(S.fx_drop > 0) || !rhythm_on()) return // drops are logged and keep their cooldown, but nothing happens
             if (flash_el && flash_ok()) play(flash_el, [{ opacity: Math.min(1, 0.8 * S.flash_power) }, { opacity: 0 }], { duration: 500, easing: "ease-out" })
-            // the camera pulls back to about half size, so there is open space all around the page, drifts a little,
-            // then comes back in with a small overshoot, like a handheld shot
+            // no zoom-out in a drop (it was too heavy): the stars still stream past and the frame flashes cyan
             const stage = root.parentElement
             if (stage) {
-                const tilt = Math.random() < 0.5 ? -1 : 1
-                const html = document.documentElement
-                // how far the page pulls back: the settled size is drop_zoom, deeper or shallower with the drop strength
-                const zoom = Math.max(0.05, 1 - (1 - S.drop_zoom) * Math.min(S.fx_drop, 2))
-                html.classList.add("drop-void")
                 if (S.drop_stars > 0) warp_stars(Math.min(1000, Math.round(S.drop_stars * Math.min(S.fx_drop, 3))))
-                setTimeout(() => html.classList.remove("drop-void"), 2600)
                 play(stage, [
-                    { transform: "scale(1) rotate(0deg)", boxShadow: "0 0 0 0 rgba(0,255,255,0)" },
-                    { transform: `scale(${zoom}) rotate(${-1.6 * tilt}deg)`, boxShadow: "0 0 0 3px rgba(0,255,255,0.8), 0 0 40px 6px rgba(0,255,255,0.4)", offset: 0.22 },
-                    { transform: `scale(${(zoom * 1.11).toFixed(3)}) rotate(${1.2 * tilt}deg)`, boxShadow: "0 0 0 3px rgba(0,255,255,0.8), 0 0 40px 6px rgba(0,255,255,0.4)", offset: 0.5 },
-                    { transform: "scale(1.04) rotate(0deg)", boxShadow: "0 0 0 2px rgba(0,255,255,0.4), 0 0 20px 2px rgba(0,255,255,0.2)", offset: 0.85 },
-                    { transform: "scale(1) rotate(0deg)", boxShadow: "0 0 0 0 rgba(0,255,255,0)" },
-                ], { duration: 2400, easing: "cubic-bezier(0.2, 0.7, 0.25, 1)" })
+                    { boxShadow: "inset 0 0 0 3px rgba(0,255,255,0.8), inset 0 0 40px 6px rgba(0,255,255,0.4)" },
+                    { boxShadow: "inset 0 0 0 0 rgba(0,255,255,0)" },
+                ], { duration: 900, easing: "ease-out" })
             }
             const badge = document.querySelector(".pixel_logo_gif")
             const base = root.getBoundingClientRect()
@@ -629,7 +655,7 @@ export default function ReactionsLayer() {
                 setTimeout(() => looks.pixels(2), 260)
             }
             if (S.show_title) looks.glitch(2)
-            if (S.fx_thick > 0) {
+            if (fx_thick() > 0) {
                 big.on = true
                 big.start = now
                 big.level = lv.sustain
@@ -705,6 +731,7 @@ export default function ReactionsLayer() {
             const dt = Math.min(0.1, (now - (last_now || now)) / 1000)
             last_now = now
             const lv = levels(now)
+            last_lv = lv
             run_big(now, dt * 1000, lv)
             run_song(now, dt * 1000, lv)
             const energy = Math.max(lv[0], lv[1], lv[2] * 0.8)
@@ -734,7 +761,8 @@ export default function ReactionsLayer() {
                 drifts = document.getAnimations().filter((a) => a.effect && a.effect.target && a.effect.target.classList && a.effect.target.classList.contains("bg-drift") && a.animationName === "bg-diagonal")
             }
             const spike = 6.5 * S.fx_drop * Math.exp(-(now - song.drop_at) / 3500) // the grid races after a drop, then settles
-            const rate_target = Math.min(12, (lv.followed ? 1 + 2.4 * S.fx_grid * Math.max(0, lv.sustain - 0.3) : 1) + spike)
+            const open_rate = 1 + (Math.max(1, S.hold_speed) - 1) * zoom.level // faster still while the open space is on
+            const rate_target = Math.min(16, Math.min(12, (lv.followed ? 1 + 2.4 * S.fx_grid * Math.max(0, lv.sustain - 0.3) : 1) + spike) * open_rate)
             drift_rate += (rate_target - drift_rate) * 0.04
             for (const a of drifts) a.playbackRate = drift_rate
             floor_debt += dt * (2 + 22 * lv[0] * lv[0] + 6 * lv[1]) * (1 - 0.7 * song.calm) * pixel_gain
@@ -781,9 +809,15 @@ export default function ReactionsLayer() {
         }
         frame = requestAnimationFrame(tick)
 
+        stop_manual = register_manual({
+            thin: () => { if (looks.laser) looks.laser(1.2) },
+            drop: () => { if (last_lv) do_drop(performance.now(), last_lv) },
+        })
+
         return () => {
             cancelAnimationFrame(frame)
             stop_hits()
+            stop_manual()
             document.documentElement.style.removeProperty("--pulse")
             document.documentElement.style.removeProperty("--size")
             wall()?.style.removeProperty("opacity")

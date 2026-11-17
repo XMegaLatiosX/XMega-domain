@@ -3,6 +3,9 @@ import { toggle_panel, useVizUi } from "../music/viz-ui"
 import { useBeat } from "../music/useBeat"
 import { useBeeps, set_beeps, echo_count } from "../music/beeps"
 import { get_bars } from "../music/reactor"
+import { PERF_NAMES, set_perf, usePerf } from "../music/perf"
+import { fire, set_thick, useThick } from "../music/manual"
+import { pad_press, pad_stop, pad_info, usePad } from "../music/pad"
 import { band_group, band_hz, BAND_COUNT } from "../music/tempo"
 import { best_fit } from "../music/patterns"
 import { recent_events, stats_text, beats_text } from "../music/debug-log"
@@ -14,7 +17,7 @@ import { SCHEMA, GROUPS, PRESETS, DEFAULTS, useSettings, set_setting, reset_sett
 //   settings  sensitivity of every effect, where each one shows up, patterns
 //   pad       manual beat (opened from the "pad" button in the player): fire the effects by hand
 const box = "border border-cyan-800 bg-black/75 backdrop-blur-sm text-cyan-200 leading-none pixel-font"
-const panel = `${box} text-[11px]`
+const panel = `${box} text-[11px] viz-pop`
 const small = "h-6 px-2 border border-cyan-800 text-cyan-300 hover:bg-cyan-950 cursor-pointer whitespace-nowrap"
 const lit = "bg-cyan-950 text-cyan-100 border-cyan-500"
 
@@ -273,6 +276,21 @@ function SettingRow({ item, value }) {
     )
 }
 
+// how heavy the site may be, apart from the presets: the presets change how it reacts, this changes how much it does
+function PerfSection() {
+    const { level, rhythm } = usePerf()
+    return (
+        <div className="mb-2 border border-cyan-900 p-2 space-y-1.5">
+            <div className="flex items-center gap-1">
+                <span className="w-20 shrink-0">performance</span>
+                {PERF_NAMES.map((name, index) => <button key={name} type="button" className={`${small} flex-1 ${level === index ? lit : ""}`} aria-pressed={level === index} onClick={() => set_perf({ level: index })}>{name}</button>)}
+            </div>
+            <Check label="rhythm reactions (off: nothing moves to the beat)" checked={rhythm} onChange={(on) => set_perf({ rhythm: on })} />
+            <div className="text-cyan-600 leading-snug">low turns off the screen glow, edges and laser streaks. medium is the default. presets below do not change this.</div>
+        </div>
+    )
+}
+
 function SettingsPanel() {
     const values = useSettings()
     const { nudge_ms, nudge } = useBeat()
@@ -284,6 +302,7 @@ function SettingsPanel() {
     return (
         <div className={`${panel} w-80 max-w-[calc(100vw-1rem)] p-2 overflow-y-auto`} style={{ maxHeight: "calc(100vh - 12rem)" }} data-music-ui>
             <Title onClose={() => toggle_panel("settings")}>settings{changed_total ? ` · ${changed_total} changed` : ""}</Title>
+            <PerfSection />
             <div className="flex flex-wrap gap-1 mb-2">
                 {Object.keys(PRESETS).map((name) => <button key={name} type="button" className={small} onClick={() => { apply_preset(name); say(`preset ${name}`) }}>{name}</button>)}
             </div>
@@ -331,24 +350,40 @@ function SettingsPanel() {
 
 // manual beat: one button per effect, and a bar for the thick laser
 function PadPanel() {
-    const [thick, set_thick] = useState(false)
-    const [width, set_width] = useState(60)
+    const thick = useThick()
+    usePad()
+    const now = useLive(100)
+    const info = pad_info(now)
     const pad = `${small} h-9 flex-1`
+    const press = (kind) => (event) => { event.preventDefault(); pad_press(kind) }
     return (
         <div className={`${panel} w-60 max-w-[calc(100vw-1rem)] p-2`} data-music-ui>
             <Title onClose={() => toggle_panel("pad")}>manual beat</Title>
             <div className="space-y-2">
                 <div className="flex gap-1.5">
-                    <button type="button" className={pad}>kick</button>
-                    <button type="button" className={pad}>snare</button>
-                    <button type="button" className={pad}>hat</button>
+                    {["kick", "snare", "hat"].map((kind) => (
+                        <button key={kind} type="button" className={pad} onPointerDown={press(kind)}>{kind}</button>
+                    ))}
                 </div>
-                <button type="button" className={`${pad} w-full`}>thin lasers</button>
+                <div className="space-y-0.5" aria-label="pattern">
+                    {["kick", "snare", "hat"].map((kind) => (
+                        <div key={kind} className="flex gap-px">
+                            {Array.from({ length: 16 }, (_, i) => (
+                                <span key={i} className="h-1.5 flex-1" style={{ background: info.pattern[kind].has(i) ? (i === info.step ? "#fff" : "#22d3ee") : i === info.step ? "rgba(255,255,255,.5)" : "rgba(34,211,238,.15)" }} />
+                            ))}
+                        </div>
+                    ))}
+                </div>
+                <div className="flex items-center gap-1.5 text-[11px] leading-tight text-cyan-200/80">
+                    <span className="flex-1">{info.looping ? `${info.bpm.toFixed(1)} BPM · ` : ""}{info.message}</span>
+                    {info.looping && <button type="button" className={`${small} h-7 px-2`} onClick={pad_stop}>stop</button>}
+                </div>
+                <button type="button" className={`${pad} w-full`} onPointerDown={(event) => { event.preventDefault(); fire("thin") }}>thin lasers</button>
                 <div className="flex items-center gap-1.5">
-                    <button type="button" className={`${pad} ${thick ? lit : ""}`} onClick={() => set_thick(!thick)}>thick laser</button>
-                    <input type="range" min="0" max="100" value={width} onChange={(event) => set_width(Number(event.target.value))} className="flex-[1.4] min-w-0 accent-cyan-400" aria-label="thick laser: size and speed" />
+                    <button type="button" className={`${pad} ${thick.on ? lit : ""}`} onClick={() => set_thick({ on: !thick.on })}>thick laser</button>
+                    <input type="range" min="0" max="100" value={Math.round(thick.amount * 100)} onChange={(event) => set_thick({ amount: Number(event.target.value) / 100 })} className="flex-[1.4] min-w-0 accent-cyan-400" aria-label="thick laser: size and speed" />
                 </div>
-                <button type="button" className={`${pad} w-full`}>drop</button>
+                <button type="button" className={`${pad} w-full`} onPointerDown={(event) => { event.preventDefault(); fire("drop") }}>drop</button>
             </div>
         </div>
     )
@@ -356,6 +391,50 @@ function PadPanel() {
 
 // from the "sm" breakpoint up there is room for the data panel on the right side; on a phone everything stacks on the left
 const WIDE = "(min-width: 640px)"
+// full screen button (top right; steps left when the data panel is open there). Not shown where the browser cannot do it (iPhone).
+function useFullscreen() {
+    // "full" is the browser's full screen however it started: this button, or F11 (display-mode: fullscreen)
+    const read = () => !!document.fullscreenElement || window.matchMedia("(display-mode: fullscreen)").matches
+    const [full, set_full] = useState(read)
+    useEffect(() => {
+        const change = () => set_full(read())
+        document.addEventListener("fullscreenchange", change)
+        const query = window.matchMedia("(display-mode: fullscreen)")
+        query.addEventListener("change", change)
+        window.addEventListener("resize", change)
+        return () => {
+            document.removeEventListener("fullscreenchange", change)
+            query.removeEventListener("change", change)
+            window.removeEventListener("resize", change)
+        }
+    }, [])
+    // in full screen the header and the top links go away (see html.site-full in index.css)
+    useEffect(() => {
+        document.documentElement.classList.toggle("site-full", full)
+        return () => document.documentElement.classList.remove("site-full")
+    }, [full])
+    const supported = !!document.documentElement.requestFullscreen
+    const toggle = () => { (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()).catch(() => {}) }
+    return { full, supported, toggle }
+}
+
+function FullscreenButton({ shifted }) {
+    const { full, supported, toggle } = useFullscreen()
+    if (!supported) return null
+    return (
+        <button type="button" data-music-ui onClick={toggle} aria-label={full ? "leave full screen" : "full screen"} title={full ? "leave full screen (F11)" : "full screen (F11)"}
+            className="absolute top-2 lg:top-12 z-40 h-9 w-9 flex items-center justify-center text-cyan-200 cursor-pointer transition-all duration-300"
+            style={{ right: shifted ? "18.75rem" : "0.5rem", opacity: 0.75, top: full ? "0.5rem" : undefined }}
+            onMouseEnter={(event) => { event.currentTarget.style.opacity = "1" }} onMouseLeave={(event) => { event.currentTarget.style.opacity = "0.75" }}>
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="2" shapeRendering="crispEdges">
+                {full
+                    ? <path d="M8 2v6H2M14 2v6h6M8 20v-6H2M14 20v-6h6" />
+                    : <path d="M2 8V2h6M14 2h6v6M2 14v6h6M20 14v6h-6" />}
+            </svg>
+        </button>
+    )
+}
+
 function useWide() {
     return useSyncExternalStore(
         (notify) => {
@@ -386,7 +465,7 @@ export default function VizUi() {
                         ⚙
                     </button>
                     {menu && (
-                        <div className="flex gap-1">
+                        <div className="flex gap-1 viz-pop">
                             <button type="button" className={`${box} h-9 px-3 text-[15px] cursor-pointer ${data ? lit : ""}`} onClick={() => toggle_panel("data")} aria-pressed={data}>data</button>
                             <button type="button" className={`${box} h-9 px-3 text-[15px] cursor-pointer ${settings ? lit : ""}`} onClick={() => toggle_panel("settings")} aria-pressed={settings}>settings</button>
                         </div>
@@ -395,9 +474,10 @@ export default function VizUi() {
                 {data && !wide && <DataPanel />}
                 {settings && <SettingsPanel />}
             </div>
+            <FullscreenButton shifted={data && wide} />
             {/* top right (wide screens): the data panel, scrolls by itself and leaves room for the manual beat pad when that is open */}
             {data && wide && (
-                <div className="absolute top-2 right-2 z-40 overflow-y-auto" style={{ maxHeight: pad ? "calc(100% - 15.5rem)" : "calc(100% - 1rem)" }} data-music-ui>
+                <div className="absolute top-2 lg:top-12 right-2 z-40 overflow-y-auto" style={{ maxHeight: pad ? "calc(100% - 18rem)" : "calc(100% - 3.5rem)" }} data-music-ui>
                     <DataPanel />
                 </div>
             )}

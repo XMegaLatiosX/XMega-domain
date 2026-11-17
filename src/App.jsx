@@ -8,6 +8,7 @@ import Blog from './pages/blog'
 import Blog_post from './pages/blog/post'
 import Modal from './components/modal'
 import Settings from './pages/settings'
+import Music from './pages/music'
 import Feedback from './pages/feedback'
 import CreatePost from './pages/blog/create-post'
 import Self_improvement from './pages/self-improvement/self_improvement'
@@ -18,6 +19,7 @@ import Project from './pages/projects/project'
 import MusicProvider from './music/MusicProvider'
 import MusicDock from './music/MusicDock'
 import BeatProvider from './music/BeatProvider'
+import SiteBeat from './components/site-beat'
 
 function App() {
 
@@ -28,6 +30,8 @@ function App() {
         <Routes>
             <Route path="/" element={<Home/>} />
             <Route path="/about" element={<About/>} />
+
+            <Route path="/music" element={<Music/>} />
 
             <Route path="/blog" element={<Blog/>} />
             <Route path="/blog/create-post" element={<CreatePost/>}>
@@ -53,6 +57,7 @@ function App() {
             <Route path="/feedback" element={<Feedback/>} />
             <Route path="*" element={<Notfound/>} />
         </Routes>
+        <SiteBeat/>
         <MusicDock/>
         </MusicProvider>
       </BeatProvider>

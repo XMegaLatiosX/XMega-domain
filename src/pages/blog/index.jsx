@@ -7,6 +7,7 @@ import Sidebar from "../../components/sidebar"
 
 
 import { supabase } from "../../lib/supabase"
+import AdminFab from "../../components/admin-fab"
 
 
 
@@ -75,7 +76,7 @@ function Blog() {
             <Header/>
             <NavUpperBar/>
             <Sidebar/>
-            <main className="w-screen h-[calc(100vh-7rem)] overflow-auto pt-2">
+            <main className="w-screen h-[calc(100vh-6.5rem)] overflow-auto pt-2">
                 <div className="w-full justify-items-center items-center flex-col">
                     {(posts.length === 0 && !loading) && (<p>ops, looks like there is no posts yet D=</p>)}
                     {
@@ -92,7 +93,7 @@ function Blog() {
                         })
                     }
                 </div>
-                {user?.app_metadata?.is_admin? <Link className="fixed right-8 bottom-4" to={(`/blog/create-post`)} > <button className="w-12 h-12"> + </button> </Link>: null}
+                {user?.app_metadata?.is_admin ? <AdminFab to="/blog/create-post" label="new post" /> : null}
             </main>
         </Screen>
 

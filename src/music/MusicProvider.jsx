@@ -1,3 +1,4 @@
+import { clean_title, next_similar } from "./similar"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useLocation } from "react-router-dom"
 import { MusicContext } from "./context"
@@ -20,9 +21,17 @@ export default function MusicProvider({ children }) {
     const sc_frame = useRef(null)
     const sc_promise = useRef(null)
     const sc_loaded = useRef(Promise.resolve())
-    const active = useRef(null) // "yt" | "sc"
+    const active = useRef(null) // "yt" | "sc" | "file"
+    const audio_ref = useRef(null) // the <audio> for uploaded files, made the first time one is played
     const queue_ref = useRef([])
-    const index_ref = useRef(-1)
+    const played_ref = useRef(new Set()) // songs already heard through autoplay in this session
+    const title_ref = useRef("")
+    const finding_ref = useRef(false)
+    const [autoplay, set_autoplay_state] = useState(() => { try { return localStorage.getItem("xm_autoplay") !== "0" } catch { return true } }) // on unless turned off
+    const autoplay_ref = useRef(autoplay)
+    const set_autoplay = useCallback((on) => { autoplay_ref.current = on; set_autoplay_state(on); try { localStorage.setItem("xm_autoplay", on ? "1" : "0") } catch { /* not remembered */ } }, [])
+    const go_ref = useRef(null) // go_to, for the autoplay callback that runs after it
+        const index_ref = useRef(-1)
     const volume_ref = useRef(80)
     const handlers = useRef({})
     const beat = useBeat()
@@ -37,7 +46,7 @@ export default function MusicProvider({ children }) {
     const [dock_open, set_dock_open] = useState(false)
     const [volume, set_volume_state] = useState(80)
     const [queue_size, set_queue_size] = useState(0)
-    const [source, set_source] = useState(null) // "yt" | "sc" | null
+    const [source, set_source] = useState(null) // "yt" | "sc" | "file" | null
     const [link, set_link] = useState("")
     const sc_progress = useRef({ pos: 0, dur: 0 })
 
@@ -109,11 +118,26 @@ export default function MusicProvider({ children }) {
         return sc_promise.current
     }, [])
 
+    // ---------- uploaded files ----------
+    const get_audio = useCallback(() => {
+        if (!audio_ref.current) {
+            const audio = new Audio()
+            audio.preload = "auto"
+            audio.addEventListener("play", () => set_playing(true))
+            audio.addEventListener("pause", () => set_playing(false))
+            audio.addEventListener("ended", () => handlers.current.file_end?.())
+            audio.addEventListener("error", () => handlers.current.file_error?.())
+            audio_ref.current = audio
+        }
+        return audio_ref.current
+    }, [])
+
     // ---------- queue ----------
     const stop_other = useCallback(async (keep) => {
         try {
             if (keep !== "yt" && yt_promise.current) (await yt_promise.current).pauseVideo()
             if (keep !== "sc" && sc_promise.current) (await sc_promise.current).pause()
+            if (keep !== "file" && audio_ref.current) audio_ref.current.pause()
         } catch { /* the other player may not be ready, nothing to stop */ }
     }, [])
 
@@ -123,10 +147,15 @@ export default function MusicProvider({ children }) {
         active.current = item.source
         set_source(item.source)
         set_title(item.title || "")
-        set_link(item.source === "yt" && item.id ? `https://www.youtube.com/watch?v=${item.id}` : item.url || "")
+        set_link(item.source === "file" ? "" : item.source === "yt" && item.id ? `https://www.youtube.com/watch?v=${item.id}` : item.url || "")
         sc_progress.current = { pos: 0, dur: 0 }
 
-        if (item.source === "yt") {
+        if (item.source === "file") {
+            const audio = get_audio()
+            audio.src = item.url
+            audio.volume = volume_ref.current / 100
+            await audio.play()
+        } else if (item.source === "yt") {
             const player = await get_yt()
             player.setVolume(volume_ref.current)
             if (item.list && !item.id) player.loadPlaylist({ list: item.list, listType: "playlist" })
@@ -143,17 +172,56 @@ export default function MusicProvider({ children }) {
             widget.setVolume(volume_ref.current)
             if (!first_time) widget.load(item.url, { auto_play: true })
         }
-    }, [get_yt, get_sc, stop_other])
+    }, [get_yt, get_sc, get_audio, stop_other])
+
+    useEffect(() => { title_ref.current = title }, [title])
 
     const go_to = useCallback((i) => {
         const item = queue_ref.current[i]
-        if (!item) { set_playing(false); return }
+        if (!item) {
+            // The queue ended: look for a song to follow, so the music does not stop.
+            //  1. a similar song from Last.fm, found on YouTube; 2. when Last.fm does not know the song (typical for your own music,
+            //  or SoundCloud titles), YouTube is searched with the song's own title and the first result that is not that song plays.
+            if (autoplay_ref.current && !finding_ref.current && title_ref.current) {
+                finding_ref.current = true
+                set_loading(true)
+                const current = title_ref.current
+                const norm = (text) => String(text).toLowerCase().replace(/[^a-z0-9]+/g, "")
+                const same_song = (candidate) => norm(candidate.title).includes(norm(clean_title(current))) || norm(clean_title(candidate.title)) === norm(clean_title(current))
+                const fresh = (candidate) => !played_ref.current.has(`yt:${candidate.id}`)
+                ;(async () => {
+                    let chosen = null
+                    try {
+                        const found = await next_similar(current, played_ref.current)
+                        if (found) {
+                            played_ref.current.add(`${found.artist} - ${found.name}`.toLowerCase())
+                            chosen = (await searchYouTube(`${found.artist} ${found.name}`)).find(fresh) || null
+                        }
+                    } catch { /* Last.fm did not answer: the title search below still works */ }
+                    if (!chosen) {
+                        const results = await searchYouTube(clean_title(current))
+                        chosen = results.find((candidate) => fresh(candidate) && !same_song(candidate)) || results.find(fresh) || null
+                    }
+                    if (!chosen) { set_playing(false); set_message("autoplay: nothing found to play next"); return }
+                    played_ref.current.add(`yt:${chosen.id}`)
+                    queue_ref.current = [...queue_ref.current, chosen]
+                    set_queue_size(queue_ref.current.length)
+                    go_ref.current(queue_ref.current.length - 1)
+                })()
+                    .catch(() => { set_playing(false); set_message("autoplay: the search did not answer (YouTube key or daily limit?)") })
+                    .finally(() => { finding_ref.current = false; set_loading(false) })
+                return
+            }
+            set_playing(false)
+            return
+        }
         index_ref.current = i
         play_item(item).catch((err) => set_message(err.message))
     }, [play_item])
+    useEffect(() => { go_ref.current = go_to }, [go_to])
 
     // ---------- public actions ----------
-    const play_input = useCallback(async (text) => {
+    const play_input = useCallback(async (text, given_title = "") => {
         set_message("")
         const parsed = parseInput(text)
         if (!parsed) return
@@ -163,6 +231,9 @@ export default function MusicProvider({ children }) {
             let items = []
             if (parsed.type === "youtube") {
                 items = [{ source: "yt", id: parsed.videoId, list: parsed.playlistId, title: "" }]
+            } else if (parsed.type === "audio") {
+                const name = decodeURIComponent(parsed.url.split("/").pop() || "").replace(/\.[a-z0-9]+$/i, "").replace(/^[0-9a-f-]{36}-/, "")
+                items = [{ source: "file", url: parsed.url, title: given_title || name }]
             } else if (parsed.type === "soundcloud") {
                 const resolved = parsed.short ? await resolveSoundCloudShort(parsed.url) : { url: parsed.url, title: "" }
                 items = [{ source: "sc", url: resolved.url, title: resolved.title }]
@@ -174,6 +245,7 @@ export default function MusicProvider({ children }) {
             }
             if (!items.length) throw new Error("Nothing found. Try another name or a link.")
 
+            played_ref.current = new Set()
             queue_ref.current = items
             set_queue_size(items.length)
             set_started(true)
@@ -193,9 +265,12 @@ export default function MusicProvider({ children }) {
                 p.getPlayerState() === 1 ? p.pauseVideo() : p.playVideo()
             } else if (active.current === "sc") {
                 (await get_sc()).toggle()
+            } else if (active.current === "file") {
+                const audio = get_audio()
+                if (audio.paused) await audio.play(); else audio.pause()
             }
         } catch (err) { set_message(err.message) }
-    }, [get_yt, get_sc])
+    }, [get_yt, get_sc, get_audio])
 
     const next = useCallback(async () => {
         try {
@@ -236,6 +311,7 @@ export default function MusicProvider({ children }) {
             if (p?.getCurrentTime) return { pos: p.getCurrentTime(), dur: p.getDuration() }
         }
         if (active.current === "sc") return sc_progress.current
+        if (active.current === "file" && audio_ref.current) return { pos: audio_ref.current.currentTime, dur: Number.isFinite(audio_ref.current.duration) ? audio_ref.current.duration : 0 }
         return { pos: 0, dur: 0 }
     }, [])
 
@@ -247,6 +323,8 @@ export default function MusicProvider({ children }) {
             } else if (active.current === "sc") {
                 const w = await get_sc()
                 w.getDuration((d) => w.seekTo(fraction * d))
+            } else if (active.current === "file" && audio_ref.current && Number.isFinite(audio_ref.current.duration)) {
+                audio_ref.current.currentTime = fraction * audio_ref.current.duration
             }
         } catch (err) { set_message(err.message) }
     }, [get_yt, get_sc])
@@ -254,6 +332,7 @@ export default function MusicProvider({ children }) {
     const set_volume = useCallback(async (value) => {
         volume_ref.current = value
         set_volume_state(value)
+        if (audio_ref.current) audio_ref.current.volume = value / 100
         try {
             if (yt_promise.current) (await yt_promise.current).setVolume(value)
             if (sc_promise.current) (await sc_promise.current).setVolume(value)
@@ -295,6 +374,11 @@ export default function MusicProvider({ children }) {
             set_message("That video can't be played here. Skipping.")
             go_to(index_ref.current + 1)
         }
+        handlers.current.file_end = () => go_to(index_ref.current + 1)
+        handlers.current.file_error = () => {
+            set_message("That file can't be played. Skipping.")
+            go_to(index_ref.current + 1)
+        }
         handlers.current.sc_finish = async () => {
             const item = queue_ref.current[index_ref.current]
             // SoundCloud sets play their own next track; only advance our queue for single tracks
@@ -304,8 +388,9 @@ export default function MusicProvider({ children }) {
 
     const value = useMemo(() => ({
         playing, title, link, loading, message, started, dock_open, volume, queue_size,
+        autoplay, set_autoplay,
         set_dock_open, set_message, play_input, toggle, next, prev, set_volume, get_progress, seek,
-    }), [playing, title, link, loading, message, started, dock_open, volume, queue_size, play_input, toggle, next, prev, set_volume, get_progress, seek])
+    }), [playing, title, link, loading, message, started, dock_open, volume, queue_size, autoplay, set_autoplay, play_input, toggle, next, prev, set_volume, get_progress, seek])
 
     // The video/artwork slides in above the player while the controls are open.
     const yt_visible = dock_open && source === "yt"

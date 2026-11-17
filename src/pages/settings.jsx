@@ -11,7 +11,7 @@ function Settings() {
             <Header/>
             <NavUpperBar/>
             <Sidebar/>
-            <main className="w-screen h-[calc(100vh-7rem)] overflow-auto pt-2">
+            <main className="w-screen h-[calc(100vh-6.5rem)] overflow-auto pt-2">
                 <div className="w-full flex justify-center px-4 pt-6">
                     <div className="max-w-150 min-h-[70vh] py-6 px-4 bg-gray-900 rounded-xl grow shadow-cyan-900 shadow justify-items-center" >
                         <h2 className="font-bold text-cyan-600 text-3xl">Settings</h2>

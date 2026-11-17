@@ -6,6 +6,7 @@ import { note_event, note_sample } from "./debug-log"
 import { is_echo } from "./beeps"
 import { S, subscribe_settings, worker_values } from "./settings"
 import { Groove } from "./groove"
+import { attach_pad, pad_stop } from "./pad"
 
 // One beat for the whole site.
 //  - idle:      144 BPM, a soft pulse, not tied to any music
@@ -43,6 +44,9 @@ function read_lag() {
 function mod(value, size) {
     return ((value % size) + size) % size
 }
+
+// every CSS animation that runs on the site clock
+const SYNCED = new Set(["beat", "pulseRing", "site_pulse", "site_flash", "site_bar", "site_pixels"])
 
 export default function BeatProvider({ children }) {
     const { pathname } = useLocation()
@@ -100,7 +104,7 @@ export default function BeatProvider({ children }) {
         document.documentElement.getBoundingClientRect() // make sure a new --beat / un-paused state is already in effect
         for (const animation of document.getAnimations()) {
             const name = animation.animationName
-            if (name === "beat" || name === "pulseRing") animation.currentTime = mod(now - clock.anchor_perf, clock.beat_ms)
+            if (SYNCED.has(name)) animation.currentTime = mod(now - clock.anchor_perf, clock.beat_ms)
         }
     }
 
@@ -108,6 +112,7 @@ export default function BeatProvider({ children }) {
         const root = document.documentElement
         applied.current = { beat_ms, anchor_perf }
         root.dataset.beat = ""
+        root.dataset.beatOn = "" // a tempo is set: the quiet site-wide pulses (components/site-beat.jsx) may show
         root.style.setProperty("--beat", `${(beat_ms / 1000).toFixed(4)}s`)
         root.style.setProperty("--beat-peak", String(ACTIVE_PEAK))
         align_all()
@@ -119,6 +124,7 @@ export default function BeatProvider({ children }) {
         raw_anchor.current = null
         root.style.removeProperty("--beat")
         root.style.removeProperty("--beat-peak")
+        delete root.dataset.beatOn
     }
 
     // apply an anchor (taken before nudge/latency); skip it if nothing really moved
@@ -386,6 +392,16 @@ export default function BeatProvider({ children }) {
         follow(beat_ms, anchor_perf, true)
         set_mode({ mode: "manual", bpm: 60000 / beat_ms, silent: false, message: "" })
     }
+
+    // the pad sets the clock when it finds a tempo in what was played
+    function set_clock(beat_ms, anchor_perf) {
+        taps.current = []
+        manual(beat_ms, anchor_perf, "typed")
+    }
+    const clock_ref = useRef(null)
+    useEffect(() => { clock_ref.current = set_clock })
+    useEffect(() => { attach_pad((beat_ms, anchor) => clock_ref.current && clock_ref.current(beat_ms, anchor)) }, [])
+    useEffect(() => { if (info.mode === "auto") pad_stop() }, [info.mode])
 
     // taps count from the 2nd one on: the gap between the last two taps is the tempo, the last tap is a beat
     function tap() {

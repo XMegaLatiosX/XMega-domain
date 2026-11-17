@@ -1,4 +1,6 @@
 import { Link } from "react-router-dom"
+import AdminFab from "../../components/admin-fab"
+import { StatusBadge } from "../../components/content-blocks"
 import { supabase } from "../../lib/supabase"
 import { useEffect, useState } from "react"
 
@@ -8,46 +10,29 @@ import Screen from "../../components/screen"
 import Sidebar from "../../components/sidebar"
 
 
-function ProjectCard({title, description, last_update, status, url}) {
-    const last_update_date = last_update ? last_update.split('T')[0] : ""
-    const status_colors = {
-        planning: "bg-cyan-700 border-cyan-500 text-cyan-300",
-        active: "bg-blue-700 border-blue-500 text-blue-300",
-        paused: "bg-yellow-700 border-yellow-500 text-yellow-300",
-        completed: "bg-green-700 border-green-500 text-green-300",
-        suspended: "bg-red-700 border-red-500 text-red-300",
-    }
-    const status_name = {
-        planning: "Planning",
-        active: "In Progress",
-        paused: "Paused",
-        completed: "Completed",
-        suspended: "Suspended",
-    }
+// The cover is the first image of the project; without one, a big letter on a dark tile.
+function ProjectCard({ title, description, last_update, status, url, content }) {
+    const last_update_date = last_update ? last_update.split("T")[0] : ""
+    const blocks = content || []
+    const cover = blocks.find((block) => block.type === "image")?.value
+    const count = (type) => blocks.filter((block) => block.type === type).length
+    const parts = [["image", "images"], ["video", "videos"], ["audio", "audio"], ["embed", "embeds"]].map(([type, name]) => (count(type) ? `${count(type)} ${name}` : "")).filter(Boolean)
     return (
-        <Link to={url} className="rounded-3xl bg-gray-900 px-4 pt-3 pb-2 mb-6 border border-gray-600 flex-col">
-
-            <div className="flex justify-between items-center">
-                <h3 className="font-bold text-cyan-400 text-xl">{title}</h3>
-
-                <div className="flex flex-col justify-center items-center">
-                    <span className="font-extralight font-mono text-xs italic text-gray-500">last update: {last_update_date}</span>
-
-                    <div className="flex justify-between w-full items-center">
-                        <span className="font-bold text-sm italic text-gray-500 pb-0.5">status:</span>
-                        <span className={`select-none w-24 text-center rounded-2xl border-2 pb-0.5 items-center flex justify-center text-xs font-semibold
-                            ${status_colors[status]
-                            }`}>{status_name[status]}</span>
-                    </div>
-                    
-
+        <Link to={url} className="group flex flex-col border-2 border-cyan-900 bg-gray-950 hover:border-cyan-400 transition-colors overflow-hidden">
+            <div className="relative aspect-video bg-gradient-to-br from-cyan-950 to-gray-950 overflow-hidden">
+                {cover
+                    ? <img src={cover} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition duration-300" />
+                    : <span className="absolute inset-0 flex items-center justify-center pixel-font text-6xl text-cyan-800">{(title || "?").trim().charAt(0).toUpperCase()}</span>}
+                <StatusBadge status={status} className="absolute top-2 left-2" />
+            </div>
+            <div className="flex flex-col gap-1.5 p-3">
+                <h3 className="pixel-font text-lg text-cyan-300">{title}</h3>
+                <p className="text-sm text-cyan-100/70 line-clamp-3">{description}</p>
+                <div className="mt-1 flex flex-wrap items-center justify-between gap-x-3 text-xs text-cyan-700">
+                    <span>{last_update_date && `updated ${last_update_date}`}</span>
+                    <span>{parts.join(" · ")}</span>
                 </div>
             </div>
-
-            <hr className="w-full text-gray-600 my-3"></hr>
-            <p className="text-gray-600">{description}</p>
-
-
         </Link>
     )
 }
@@ -90,12 +75,15 @@ function Projects() {
             <Header/>
             <NavUpperBar/>
             <Sidebar/>
-            <main className="relative w-screen h-[calc(100vh-7rem)] overflow-auto pt-2 px-2">
-                <div className="w-full flex justify-center py-8">
-                    <div className="flex flex-col grow max-w-200">
+            <main className="relative w-screen h-[calc(100vh-6.5rem)] overflow-auto pt-2 px-2">
+                <div className="w-full flex justify-center pt-6 pb-24 px-1">
+                    <div className="w-full max-w-6xl">
+                    <h1 className="pixel-font text-3xl text-cyan-300">projects</h1>
+                    <p className="text-sm text-cyan-700 mb-5">what I am building, and how far along it is</p>
                     {
-                        (projects.length === 0 && !loading) && <span>ops, looks like there is no projects being made yet D:</span>
+                        (projects.length === 0 && !loading) && <span className="text-cyan-700">ops, looks like there is no projects being made yet D:</span>
                     }
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                     {
                         projects.map(project => {
                             return <ProjectCard 
@@ -105,12 +93,14 @@ function Projects() {
                             status={project.status}
                             last_update={project.last_update}
                             url={`/projects/${project.url_title}`}
+                            content={project.content}
                             />
                         })
                     }
                     </div>
+                    </div>
                 </div>
-                {user?.app_metadata?.is_admin? <Link className="fixed right-8 bottom-4" to={(`/projects/add_project/`)} > <button className="w-12 h-12"> + </button> </Link>: null}
+                {user?.app_metadata?.is_admin ? <AdminFab to="/projects/add_project/" label="new project" /> : null}
 
                 
             </main>

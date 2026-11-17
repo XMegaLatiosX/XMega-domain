@@ -8,6 +8,7 @@ import { useSyncExternalStore } from "react"
 // back to the limit, so no typed number can break the page. Multipliers have no low-end surprise: 0 turns the effect off.
 export const GROUPS = [
     { id: "effects", title: "effects", note: "how strong each effect is. 1 = normal, 0 = off, no top limit worth worrying about" },
+    { id: "site", title: "whole site", note: "how the other pages move to the beat: header logo, screen glow, edge pixels and bars. 0 = off" },
     { id: "often", title: "how often", note: "how rare or common the big moves are" },
     { id: "flash", title: "flashes", note: "the white and bright flashes (also the drop flash)" },
     { id: "where", title: "where effects show", note: "turn whole parts of the page on or off" },
@@ -54,7 +55,15 @@ export const SCHEMA = [
     n("song", "buildup_sens", "build-up sensitivity", 1, 0, 50, 0.1, "higher = a gentler rise counts as a build-up. 0 = never"),
     n("song", "break_sens", "break sensitivity", 1, 0, 50, 0.1, "higher = a break is called at a higher volume. 0 = never"),
     n("song", "break_dim", "break wall opacity", 0.4, 0, 1, 0.05, "how visible the images stay in a break"),
-    n("song", "drop_zoom", "drop zoom-out size", 0.36, 0.05, 1, 0.01, "how small the page gets in a drop (1 = no zoom)"),
+    n("song", "hold_zoom", "open space: shrink", 0.5, 0, 0.5, 0.01, "how much the wall images shrink (0.5 = half size) in the open space, which comes in a drop: the images get small and far apart. The page itself never changes size. 0 = off"),
+    n("song", "hold_bars", "open space: bars", 4, 1, 32, 1, "how many bars (4 beats each) the open space lasts after a drop"),
+    n("song", "hold_speed", "open space: image speed", 2.5, 1, 8, 0.1, "how much faster the images move while it is open (1 = same speed)"),
+    n("song", "hold_in", "open space: in (s)", 0.8, 0.2, 30, 0.1, "how long the shrink takes (a straight line)"),
+    n("song", "hold_out", "open space: back (s)", 3, 0.2, 60, 0.5, "how long the return takes (a straight line)"),
+    b("song", "hold_busy", "open space: also when very busy", false, "also opens it when the big laser stays up for a while (off = only in drops)"),
+    n("song", "hold_wait", "busy: wait (s)", 2, 0, 60, 0.5, "seconds the big laser must stay up before the open space starts (only with the option above)"),
+    n("song", "hold_leave", "busy: stay (s)", 6, 0, 120, 0.5, "seconds without the big laser before it goes back to normal (only with the option above)"),
+    b("song", "hold_force", "open space: hold now", false, "keeps the open space on, to see how it looks"),
     n("song", "drop_stars", "drop stars", 90, 0, 1000, 10, "stars streaming past in the space around the page"),
     n("song", "pulse_min", "quiet pulse", 0.55, 0, 1, 0.05, "how strong the logo pulse stays in very quiet music"),
     n("song", "size_min", "logo size (quiet)", 0.9, 0.3, 1, 0.01, "logo size in quiet music"),
@@ -92,6 +101,10 @@ export const SCHEMA = [
     n("decide", "bias_manual", "grid offset", 0, -0.5, 0.5, 0.01, "steps, used when the line above is off", "groove"),
     n("decide", "bias_rate", "grid follow speed", 0.2, 0, 1, 0.05, "how fast the grid follows the hits", "groove"),
     n("decide", "hit_delay_ms", "detection delay (ms)", 27, 0, 200, 1, "how long after a hit starts the detector reports it", "provider"),
+    // ---- whole site
+    n("site", "site_logo", "header logo", 1, 0, 50, 0.1, "how hard the logo in the header hits on every beat"),
+    n("site", "site_flash", "screen glow", 1, 0, 50, 0.1, "the faint glow that breathes at the edge of the screen"),
+    n("site", "site_edges", "edge pixels and bars", 1, 0, 50, 0.1, "the row of pixels along the bottom and the bars on both sides"),
     // ---- forced four on the floor
     n("forced", "loud_on", "loud above", 0.45, 0, 1, 0.05, "only when the sound is at least this loud", "provider"),
     n("forced", "reject_ratio", "rejected vs passed", 1.5, 0, 20, 0.1, "hits thrown away this many times more than passed counts as messy", "provider"),
@@ -113,9 +126,9 @@ const BY_KEY = Object.fromEntries(SCHEMA.map((item) => [item.key, item]))
 // named sets of values (only what differs from the defaults)
 export const PRESETS = {
     default: {},
-    calm: { fx_kick: 0.6, fx_snare: 0.6, fx_hat: 0.5, fx_thin: 0.6, fx_thick: 0.6, fx_drop: 0.6, fx_pixels: 0.6, fx_grid: 0.5, flash_per_s: 2, flash_power: 0.6, thick_pause: 2, drop_zoom: 0.6 },
-    club: { fx_kick: 1.3, fx_snare: 1.3, fx_hat: 1.2, fx_thin: 1.3, fx_pixels: 1.4, fx_grid: 1.5, fx_logo: 1.3, thick_pause: 0.6 },
-    max: { fx_kick: 2, fx_snare: 2, fx_hat: 2, fx_thin: 2, fx_thick: 2, fx_drop: 2, fx_pixels: 2.5, fx_grid: 2, fx_tint: 1.5, fx_logo: 1.6, flash_power: 1.5, flash_per_s: 0, thick_pause: 0.3, scene_beats: 8, drop_sens: 1.5 },
+    calm: { site_logo: 0.6, site_flash: 0.5, site_edges: 0.5, fx_kick: 0.6, fx_snare: 0.6, fx_hat: 0.5, fx_thin: 0.6, fx_thick: 0.6, fx_drop: 0.6, fx_pixels: 0.6, fx_grid: 0.5, flash_per_s: 2, flash_power: 0.6, thick_pause: 2, drop_zoom: 0.6 },
+    club: { site_logo: 1.3, site_flash: 1.3, site_edges: 1.4, fx_kick: 1.3, fx_snare: 1.3, fx_hat: 1.2, fx_thin: 1.3, fx_pixels: 1.4, fx_grid: 1.5, fx_logo: 1.3, thick_pause: 0.6 },
+    max: { site_logo: 1.6, site_flash: 2, site_edges: 2, fx_kick: 2, fx_snare: 2, fx_hat: 2, fx_thin: 2, fx_thick: 2, fx_drop: 2, fx_pixels: 2.5, fx_grid: 2, fx_tint: 1.5, fx_logo: 1.6, flash_power: 1.5, flash_per_s: 0, thick_pause: 0.3, scene_beats: 8, drop_sens: 1.5 },
 }
 
 const KEY = "xm_viz_settings"

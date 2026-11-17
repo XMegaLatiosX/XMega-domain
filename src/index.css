@@ -36,7 +36,7 @@ input, textarea {
 }
 
 .main-logo {
-  @apply absolute text-[2.5rem] font-bold text-[#00ffff] sm:text-[10vw]  sm:-translate-y-4 select-none;
+  @apply absolute text-[2.5rem] font-bold text-[#00ffff] sm:text-[9vw]  sm:-translate-y-4 select-none;
   -webkit-text-stroke: 8px  black;
   @media (min-width: 640px) {
     -webkit-text-stroke: 16px  black;
@@ -52,7 +52,7 @@ input, textarea {
   -webkit-text-stroke-color: #00ffff;
 }
 .pixel_logo_gif {
-  @apply w-1/2 sm:w-1/3 translate-y-2;
+  @apply w-[45%] sm:w-[30%] translate-y-2;
   animation: beat var(--beat, 0.4167s) infinite;
   transform: scale(var(--size, 1)); /* when the beat animation is not running */
   image-rendering: pixelated;
@@ -61,7 +61,7 @@ input, textarea {
    An <img> cannot have pseudo-elements, so the ring has its own element (see pages/home.jsx), sized and placed
    like the badge. It starts thick and thins out as it spreads. */
 .beat-rings {
-  @apply absolute w-1/2 sm:w-1/3 aspect-square translate-y-2 pointer-events-none;
+  @apply absolute w-[45%] sm:w-[30%] aspect-square translate-y-2 pointer-events-none;
   border-radius: 50%;
   border: 14px solid rgba(120, 255, 255, 1);
   box-shadow: 0 0 12px rgba(0, 255, 255, .7);
@@ -87,19 +87,14 @@ input, textarea {
     display: none;
 }
 
-.page::-webkit-scrollbar {
-    background-color: rgba(255,255, 255, 0%);   
-    @apply w-2;
-}
-
-.page::-webkit-scrollbar-thumb {
-    @apply rounded-full ;
-    background-color: rgba(255,255, 255,20%);
-}
-.page::-webkit-scrollbar-track {
-    background-color: rgba(255,255, 255,10%);
-    background-color: transparent;
-}
+/* one scrollbar for the whole site: thin, square (pixel look), cyan; the top links hide theirs */
+* { scrollbar-width: thin; scrollbar-color: rgb(14 116 144 / 0.9) rgb(255 255 255 / 0.04); }
+*::-webkit-scrollbar { width: 9px; height: 9px; }
+*::-webkit-scrollbar-track { background: rgb(255 255 255 / 0.04); }
+*::-webkit-scrollbar-thumb { background: rgb(14 116 144 / 0.9); border: 2px solid rgb(3 7 18); }
+*::-webkit-scrollbar-thumb:hover { background: rgb(34 211 238 / 0.9); }
+*::-webkit-scrollbar-corner { background: transparent; }
+.UpperBar::-webkit-scrollbar { display: none; }
 
 .sidebar_div {
     @apply fixed h-[calc(100vh-4rem)] w-56 bg-gray-900 transition-all duration-300 z-50 flex flex-col   ;
@@ -361,3 +356,51 @@ html.drop-void, html.drop-void body {
 
 /* settings: "logo" switched off -> no beat animation on the logo, its title and its rings */
 html.fx-no-logo .main-logo, html.fx-no-logo .pixel_logo_gif, html.fx-no-logo .beat-rings { animation: none !important; }
+
+
+/* ---- the beat on every page, quiet (components/site-beat.jsx and the header logo) ----
+   Only while a tempo is set (data-beat-on, written by the beat provider); hidden by performance "low" and by "rhythm off". */
+.site-beat { position: fixed; inset: 0; z-index: 5; pointer-events: none; display: none; overflow: hidden; }
+:root[data-beat-on]:not([data-beat="analyzing"]):not(.rhythm-off):not(.perf-low) .site-beat { display: block; }
+.site-flash { position: absolute; inset: 0; opacity: 0; background: radial-gradient(ellipse at center, transparent 60%, rgb(34 211 238 / 0.55) 135%); animation: site_flash var(--beat) infinite; }
+.site-bar, .site-pixels { display: none; }
+:root:has(.home-main) .site-bar, :root:has(.home-main) .site-pixels { display: block; }
+.site-bar { position: absolute; top: 0; bottom: 0; width: 3px; opacity: 0; background: linear-gradient(to bottom, transparent, rgb(34 211 238 / 0.7) 20%, rgb(34 211 238 / 0.7) 80%, transparent); animation: site_bar var(--beat) infinite; }
+.site-bar-l { left: 0; }
+.site-bar-r { right: 0; animation-delay: calc(var(--beat) / 2); }
+.site-pixels { position: absolute; left: 0; right: 0; bottom: 0; height: 6px; opacity: 0; background: repeating-linear-gradient(90deg, rgb(34 211 238 / 0.8) 0 6px, transparent 6px 12px); animation: site_pixels var(--beat) infinite; }
+.site-pixels-2 { bottom: 6px; background-position: 6px 0; animation-delay: calc(var(--beat) / 2); }
+@keyframes site_flash { 0% { opacity: calc(0.16 * var(--site-flash, 1)); animation-timing-function: cubic-bezier(0.2, 0.7, 0.3, 1); } 70%, 100% { opacity: 0; } }
+@keyframes site_bar { 0% { opacity: calc(0.35 * var(--site-edges, 1)); animation-timing-function: cubic-bezier(0.2, 0.7, 0.3, 1); } 70%, 100% { opacity: 0; } }
+@keyframes site_pixels { 0% { opacity: calc(0.3 * var(--site-edges, 1)); animation-timing-function: cubic-bezier(0.2, 0.7, 0.3, 1); } 70%, 100% { opacity: 0; } }
+@keyframes site_pulse { 0% { transform: scale(calc(1 + 0.14 * var(--site-logo, 1))); filter: brightness(calc(1 + 0.4 * var(--site-logo, 1))); animation-timing-function: cubic-bezier(0.2, 0.7, 0.3, 1); } 60%, 100% { transform: scale(1); filter: brightness(1); } }
+:root[data-beat-on]:not([data-beat="analyzing"]):not(.rhythm-off) .site-logo-beat { animation: site_pulse var(--beat) infinite; }
+@media (prefers-reduced-motion: reduce) { .site-beat, .site-logo-beat { animation: none !important; } .site-beat * { animation: none !important; } }
+/* rhythm off: the home page logo and rings stop too */
+html.rhythm-off .main-logo, html.rhythm-off .pixel_logo_gif, html.rhythm-off .beat-rings, html.rhythm-off .beat1, html.rhythm-off .beat2 { animation: none !important; }
+.UpperBar { scrollbar-width: none; }
+
+/* panels and tabs of the visualizer tools slide in softly when they open */
+.viz-pop { animation: viz_pop 0.18s ease-out; }
+@keyframes viz_pop { from { opacity: 0; transform: translateY(-6px) scale(0.97); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .viz-pop { animation: none; } }
+
+/* full screen (button or F11): the header and the top links go away on the home page, which fills the screen */
+html.site-full:has(.home-main) .site-header, html.site-full:has(.home-main) .UpperBar, html.site-full:has(.home-main) #sidebar_div { display: none; }
+html.site-full .home-main { height: 100vh !important; }
+
+/* open space (components/reactions-layer.jsx sets --zoom-items): the wall images and the logo shrink around their own centres */
+#viz-world .bg-wall .bg-drift { scale: var(--zoom-items, 1); } /* not on .bg-img: the drum reactions write that one */
+#viz-world .logo-stage { scale: var(--zoom-logo, 1); }
+/* the second set of images (components/background-wall.jsx) shows up only in open space */
+.bg-extra { opacity: var(--open-level, 0); }
+html.perf-low .bg-extra { display: none; }
+
+/* long text that slides left to show its end and back (components/marquee.jsx) */
+@keyframes marquee-slide {
+  0%, 12% { transform: translateX(0); }
+  88%, 100% { transform: translateX(var(--shift)); }
+}
+.marquee-run {
+  animation: marquee-slide var(--dur, 6s) ease-in-out infinite alternate;
+}

@@ -1,4 +1,4 @@
-import { Link, Navigate, useParams } from "react-router-dom"
+import { Navigate, useParams } from "react-router-dom"
 import Header from "../../components/header"
 import NavUpperBar from "../../components/navupperbar"
 import Screen from "../../components/screen"
@@ -7,6 +7,7 @@ import Sidebar from "../../components/sidebar"
 
 import { useEffect, useState } from "react"
 import { supabase } from "../../lib/supabase"
+import AdminFab from "../../components/admin-fab"
 
 function Blog_post() {
     const { url_slug } = useParams()
@@ -80,7 +81,7 @@ function Blog_post() {
                     </div>
 
                 </div>
-                {user?.app_metadata?.is_admin? <Link className="fixed right-8 bottom-4" to={(`/blog/create-post/`+ post.id)} > <button className="p-2 border border-cyan-600 rounded-md"> Edit post </button> </Link>: null}
+                {user?.app_metadata?.is_admin ? <AdminFab to={`/blog/create-post/${post.id}`} icon="✎" label="edit post" /> : null}
             </main>
         </Screen>
     )

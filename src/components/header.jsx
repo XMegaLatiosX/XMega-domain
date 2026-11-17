@@ -1,10 +1,11 @@
 import side_bar_icon from "../assets/images/side-bar-icon.png"
 import star_icon from "../assets/images/star_icon.png"
 import user_icon from "../assets/images/user_icon.png"
-import soundwaveplaceholder from "../assets/images/soundwaveplaceholder.png"
+import HeaderNowPlaying from "./header-now-playing"
 
 import { supabase } from "../lib/supabase"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
+import { color_for, is_color } from "../lib/nick-color"
 import { Link } from "react-router-dom"
 
 
@@ -177,6 +178,19 @@ function Header() {
         
     }
 
+    // the colour of my nickname in the mural: saved a moment after the last change of the picker
+    const color_timer = useRef(null)
+    const nick_color = is_color(profile?.nick_color) ? profile.nick_color : color_for(user?.id || "")
+    function change_nick_color(e) {
+        const value = e.target.value
+        set_profile((current) => ({ ...current, nick_color: value }))
+        clearTimeout(color_timer.current)
+        color_timer.current = setTimeout(async () => {
+            const { error } = await supabase.from("profiles").update({ nick_color: value }).eq("id", user.id)
+            if (error) console.error(error)
+        }, 500)
+    }
+
     //logoff 
     async function logout() {
         const { data, error } = await supabase.auth.signOut()
@@ -259,18 +273,18 @@ function Header() {
     
     
     return (
-        <header className="relative top-0 w-screen h-16 bg-black flex justify-between items-center px-2">
+        <header className="site-header relative top-0 w-screen h-16 bg-black flex justify-between items-center px-2">
             <div className="h-full flex justify-between space-x-1 items-center gap-2">
                 <a className="border-none" onClick={toggle_side_bar}>
                     <img className="pixel-art h-10 w-10" src={side_bar_icon} />
                 </a>
                 <Link to="/" className="h-full flex items-center justify-center">
-                    <img className="absolute h-7/12" src={star_icon} />
-                    <h2 className="font-bold text-cyan-300 font-mono font-stretch-condensed z-20 text-shadow-2xs text-shadow-black">XMega</h2>
+                    <img className="absolute h-7/12 site-logo-beat" src={star_icon} />
+                    <h2 className="site-logo-beat inline-block font-bold text-cyan-300 font-mono font-stretch-condensed z-20 text-shadow-2xs text-shadow-black">XMega</h2>
                 </Link>
             </div>
 
-            {/* <img className="pixel-art absolute left-1/2 -translate-x-1/2 h-2/3 max-w-3/8" src={soundwaveplaceholder}/> */}
+            <HeaderNowPlaying />
 
             <div className="flex flex-row">
                 <div className="h-full w-16 flex items-center">
@@ -298,7 +312,13 @@ function Header() {
                             <input type="file" accept="image/*" onChange={set_profile_picture} className="absolute w-full h-full opacity-0"/>
                             <img src={profile?.profile_picture || user_icon} className="w-24 h-24" />
                         </div>
-                        <h3 className="font-bold text-2xl text-cyan-50">{profile?.nickname}</h3>
+                        <div className="flex flex-col items-center gap-1 min-w-0">
+                            <h3 className="font-bold text-xl truncate max-w-32" style={{ color: nick_color }}>{profile?.nickname}</h3>
+                            <label className="flex items-center gap-1.5 text-xs text-cyan-300 cursor-pointer">
+                                nick color
+                                <input type="color" value={nick_color} onChange={change_nick_color} aria-label="nickname colour" className="h-6 w-8 cursor-pointer bg-transparent border border-cyan-700" />
+                            </label>
+                        </div>
                     </div>
                     :
                     <div className={`w-[200%] flex flex-row transition-all h-full duration-300 ${in_login_div ? "translate-x-0" : "-translate-x-1/2"}`}>

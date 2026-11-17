@@ -1,4 +1,4 @@
-import { Link, Navigate, Outlet, useLocation, useNavigate, useParams } from "react-router-dom"
+import { Link, Outlet, useLocation, useNavigate, useParams } from "react-router-dom"
 import Header from "../../components/header"
 import NavUpperBar from "../../components/navupperbar"
 import Screen from "../../components/screen"
@@ -6,18 +6,26 @@ import Sidebar from "../../components/sidebar"
 import { useEffect, useState } from "react"
 import { supabase } from "../../lib/supabase"
 import { v4 } from "uuid"
+import AdminFab from "../../components/admin-fab"
 
 
 
-function Media_element({ name, src, category, type }) {
+const TITLES = { pixelarts: "pixel arts", edits: "edits", dances: "dance", photos: "photos" }
+
+// One piece: the picture at its own shape (a masonry wall), the name and description always readable on a dark fade at the bottom.
+function Media_element({ name, description, src, category, type }) {
     const navigate = useNavigate()
     return (
-        <a className="relative flex items-start mb-1" onClick={() => navigate(`/gallery/${category}/${name}`)}>
+        <a className="group relative block mb-3 break-inside-avoid overflow-hidden border border-cyan-900 bg-gray-950 hover:border-cyan-400 transition-colors cursor-pointer" onClick={() => navigate(`/gallery/${category}/${name}`)}>
             {
-                type === "image"? <img src={src} className="rounded-sm max-h-32"/> : <video src={src} className="rounded-sm max-h-32"></video>
+                type === "image"
+                    ? <img src={src} alt={name} loading="lazy" className="block w-full" />
+                    : <video src={src} muted preload="metadata" className="block w-full"></video>
             }
-            <div className="absolute flex items-center justify-center top-0 right-0 p-0.5">
-                <h2 className="text-sm text-cyan-500 opacity-45"> {name.split('.')[0]} </h2>
+            {type !== "image" && <span className="absolute top-2 left-2 h-7 px-2 flex items-center bg-black/70 border border-cyan-700 text-cyan-300 text-xs pixel-font">▶ video</span>}
+            <div className="absolute inset-x-0 bottom-0 px-2.5 pb-2 pt-10 bg-gradient-to-t from-black/95 via-black/65 to-transparent">
+                <h2 className="text-sm font-bold text-cyan-200 truncate">{name.split('.')[0]}</h2>
+                {description && <p className="text-xs text-cyan-100/70 truncate">{description}</p>}
             </div>
         </a>
     )
@@ -138,23 +146,31 @@ function Gallery() {
             <Header/>
             <NavUpperBar/>
             <Sidebar/>
-            <main className="relative w-screen h-[calc(100vh-7rem)] overflow-auto pt-2">
-                <div className="w-full min-h-[calc(100vh-7rem)] px-1 sm:px-2 lg:px-3 columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-2">
-                    {   
+            <main className="relative w-screen h-[calc(100vh-6.5rem)] overflow-auto pt-2">
+                <div className="w-full max-w-7xl mx-auto px-3 pt-4 pb-24">
+                    <div className="flex items-baseline gap-3 mb-4 border-b border-cyan-900 pb-2">
+                        <Link to="/gallery" className="text-cyan-600 hover:text-cyan-300 text-sm">← gallery</Link>
+                        <h1 className="pixel-font text-2xl text-cyan-300">{TITLES[category] || category}</h1>
+                        <span className="ml-auto text-xs text-cyan-700">{medias.length} {medias.length === 1 ? "piece" : "pieces"}</span>
+                    </div>
+                    {medias.length === 0 && <p className="text-cyan-700 text-sm">nothing here yet.</p>}
+                    <div className="columns-2 md:columns-3 xl:columns-4 gap-3">
+                    {
                         medias.map(piece => {
-                            return <Media_element name={piece.name} key={piece.id} src={piece.url} category={category} type={piece.file_type}/>
+                            return <Media_element name={piece.name} description={piece.description} key={piece.id} src={piece.url} category={category} type={piece.file_type}/>
                         })
                     }
-                    {user?.app_metadata?.is_admin? <a onClick={() => set_show_form(true)} className="fixed flex justify-center items-center select-none rounded-md font-bold h-12 w-12 right-8 bottom-4 text-3xl pb-1.5 text-cyan-600 bg-gray-900 border border-transparent hover:border-[rgb(83,91,243)] transition-all duration-300">+</a> : null}
+                    </div>
+                    {user?.app_metadata?.is_admin ? <AdminFab onClick={() => set_show_form(true)} label="add media" /> : null}
 
                     {
                         show_form? 
-                        <div className="fixed left-0 top-28 w-screen h-[calc(100vh-7rem)] flex justify-center items-center">
+                        <div className="fixed z-[70] left-0 top-26 w-screen h-[calc(100vh-6.5rem)] flex justify-center items-center">
                             
                             <div className="absolute z-10 w-full h-full opacity-25" onClick={close_form}></div>
                             
                             <form onSubmit={handle_submit} className="relative flex flex-col gap-2 p-4 w-72 rounded-sm border-2 border-cyan-600 bg-gray-900 z-20">
-                                <a onClick={close_form} className="absolute top-0 right-0 w-8 h-8 flex items-center justify-center bg-red-900 rounded-bl-sm">X</a>
+                                <a onClick={close_form} className="absolute top-0 right-0 w-8 h-8 flex items-center justify-center bg-red-900 hover:bg-red-700 cursor-pointer">✕</a>
                                 <input type="text" id="name_input" placeholder="name:" className="p-0.5 pl-2 bg-gray-950 border rounded-sm border-cyan-600"/>
                                 <input type="text" id="description_input" placeholder="description:" className="p-0.5 pl-2 bg-gray-950 border rounded-sm border-cyan-600"/>
 
@@ -167,7 +183,7 @@ function Gallery() {
                                     <img id="media_display" src={new_image} className="h-32 rounded-sm"/>
                                     <input type="file" id="file_input" className={`absolute w-full h-32 bg-gray-950 border rounded-sm border-cyan-600 ${new_image? "opacity-0": "opacity-100"}`} onChange={change_img}/>
                                 </div>
-                                <button type="submit" className="bg-amber-300"><span>send media!</span></button>
+                                <button type="submit" className="h-9 border-2 border-cyan-500 bg-cyan-950 text-cyan-200 hover:bg-cyan-900 cursor-pointer">send media</button>
                             </form>
                         </div>
                         : null

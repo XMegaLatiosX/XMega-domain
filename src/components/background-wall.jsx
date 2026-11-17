@@ -96,6 +96,7 @@ function buildLayout(width, height, seed) {
     const base_speed = clamp(50, 0.085 * height, 220) // px per second, similar to the old animation
 
     const items = []
+    const lanes = []
     let counter = 0
     for (let j = 0; j < lane_count; j++) {
         const p = -w / 2 + (j + 0.5) * lane_pitch
@@ -104,6 +105,7 @@ function buildLayout(width, height, seed) {
         const phase = random() * slot
         const x0 = (along_start + p) / Math.SQRT2
         const y0 = (p - along_start) / Math.SQRT2
+        lanes.push({ speed, duration, phase })
 
         for (let k = 0; k < per_lane; k++) {
             // (the random jitter can push the first images below 0: wrap them to the end of the path)
@@ -122,6 +124,33 @@ function buildLayout(width, height, seed) {
                 delay: -(offset / path_length) * duration,
                 ox: side / Math.SQRT2,
                 oy: side / Math.SQRT2,
+            })
+            counter++
+        }
+    }
+
+    // A second set of images, in between the first ones (half a lane to the side, half a slot along): invisible at rest (opacity 0),
+    // it fades in with the "open space" mode (see index.css, .bg-extra), when the images are small, so the wall is not left with holes.
+    for (let j = 0; j < lane_count; j++) {
+        const p = -w / 2 + (j + 1) * lane_pitch
+        const { duration, phase } = lanes[j]
+        const x0 = (along_start + p) / Math.SQRT2
+        const y0 = (p - along_start) / Math.SQRT2
+        for (let k = 0; k < per_lane; k++) {
+            const offset = (((k * slot + phase + slot / 2) % path_length) + path_length) % path_length
+            items.push({
+                key: `x${j}-${k}`,
+                lane: j,
+                extra: true,
+                cell: (j + k + 1) % 2,
+                src: IMAGES[(counter * 7 + j * 3 + 5) % IMAGES.length],
+                x0,
+                y0,
+                duration,
+                offset,
+                delay: -(offset / path_length) * duration,
+                ox: 0,
+                oy: 0,
             })
             counter++
         }
@@ -164,9 +193,9 @@ export default function BackgroundWall({ mode = "drift", bpm = 144 }) {
         if (!el) return
         let timer
         const measure = () => {
-            const box = el.getBoundingClientRect()
-            if (box.width < 10 || box.height < 10) return
-            const next = { width: box.width, height: box.height }
+            // layout size (clientWidth), not getBoundingClientRect: the holding zoom-out scales this layer and would shrink the numbers
+            if (el.clientWidth < 10 || el.clientHeight < 10) return
+            const next = { width: el.clientWidth, height: el.clientHeight }
             set_size((current) => (same_size(current, next) ? current : next))
         }
         measure()
@@ -215,7 +244,7 @@ export default function BackgroundWall({ mode = "drift", bpm = 144 }) {
         <div ref={wall} className={`bg-wall${active_mode === "step" ? " bg-step" : ""}`} aria-hidden="true" data-pitch={layout.lane_pitch} data-lanes={layout.lane_count} style={{ "--w": `${layout.w}px`, "--dx": `${layout.dx}px`, "--dy": `${layout.dy}px` }}>
             {layout.items.map((item, i) => (
                 <div
-                    className="bg-drift"
+                    className={item.extra ? "bg-drift bg-extra" : "bg-drift"}
                     data-j={item.lane}
                     key={item.key}
                     ref={(el) => (nodes.current[i] = el)}

@@ -22,6 +22,9 @@ export function parseInput(raw) {
     if (url) {
         const host = url.hostname.replace(/^www\.|^m\.|^music\./, "")
 
+        // a direct audio file (the ones uploaded on the music page live in the site's storage)
+        if (/\.(mp3|wav|ogg|oga|m4a|aac|flac|opus|weba)$/i.test(url.pathname)) return { type: "audio", url: url.href }
+
         if (host === "youtu.be") {
             const id = url.pathname.slice(1)
             if (YT_ID.test(id)) return { type: "youtube", videoId: id, playlistId: url.searchParams.get("list") }

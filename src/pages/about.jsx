@@ -3,42 +3,29 @@ import Header from '../components/header'
 import NavUpperBar from '../components/navupperbar'
 import Sidebar from '../components/sidebar'
 import { useEffect, useRef } from 'react'
-import tidal from "../assets/audios/KORAII - TIDAL GIRL.mp3";
+import { on_hit } from '../music/reactor'
 
 function About() {
-    const audioRef = useRef(null)
+    // "As ME." hits with the kick: a quick jump in size and a flash that settles back
+    const me = useRef(null)
     useEffect(() => {
-        let played = false 
-        function start_audio() {
-            if(played) return
-
-            audioRef.current?.play()
-            played = true
-        }
-        function handle_scroll(e) {
-            if (e.deltaY > 0) start_audio()
-        }
-        function handle_touch(e) {
-                start_audio()
-        }
-        window.addEventListener('touchmove', handle_touch)
-        window.addEventListener('wheel', handle_scroll)
-        return () => {
-            window.removeEventListener('touchmove', handle_touch)
-            window.removeEventListener('wheel', handle_scroll)
-        }
+        return on_hit((kind, strength) => {
+            if (kind !== "kick" || !me.current || document.documentElement.classList.contains("rhythm-off")) return
+            const grow = 1 + 0.22 * Math.min(1, strength)
+            me.current.animate(
+                [{ transform: `scale(${grow})`, filter: "brightness(2) drop-shadow(0 0 10px #22d3ee)" }, { transform: "scale(1)", filter: "brightness(1)" }],
+                { duration: 260, easing: "cubic-bezier(0.2, 0.9, 0.3, 1)" },
+            )
+        })
     }, [])
     return (
         <Screen>
-            <audio ref={audioRef} src={tidal}></audio>
             <Header></Header>
             <NavUpperBar></NavUpperBar>
             <Sidebar></Sidebar>
-            <main className="w-screen h-[calc(100vh-7rem)] overflow-auto p-2">
-                <a className="fixed bottom-6 right-6 border border-cyan-600 px-2 py-1 rounded-md">play</a>
-                
+            <main className="w-screen h-[calc(100vh-6.5rem)] overflow-auto p-2">
                 <div className="relative flex flex-col justify-center items-center pt-[25vh] text-center">
-                    <h1 className="font-bold text-cyan-400">
+                    <h1 className="font-extrabold text-cyan-400 text-4xl lg:text-7xl [text-shadow:0_0_1px_currentColor]">
                         This website is a lie.
                     </h1>
                     <p className="text-cyan-700 max-w-200 text-center text-lg font-semibold">
@@ -70,12 +57,12 @@ function About() {
                         <br/>
                         I put too much pressure on myself,
                         <br/>
-                        and thats an good sign, it means I know I got potential!
+                        and that's a good sign, it means I know I got potential!
                         <br/>
-                        It can easily be crushing sometimes, however, it pushes me foward as long as I do my best
+                        It can easily be crushing sometimes, however, it pushes me forward as long as I do my best
                         <br/>
                         <br/>
-                        even then, moving foward hurts, even more when you need any kind of support
+                        even then, moving forward hurts, even more when you need any kind of support
                         <br/>
                         <span className='hidden'>
                             <br/>
@@ -102,7 +89,7 @@ function About() {
                             <br/>
                             <br/>
                         </span>
-                        so you feel negleted, in the wrong for even having your interests, bringing you closer to giving up on your dreams...
+                        so you feel neglected, in the wrong for even having your interests, bringing you closer to giving up on your dreams...
                         <br/>
                         <br/>
                         once ive seen this happening i started to hide what i do from everyone, isolating myself 
@@ -128,7 +115,7 @@ function About() {
                         I must create something.
                         <br/>
                         <br/>
-                        I needed an compromise.
+                        I needed a commitment.
                         <br/>
                         <br/>
                         <br/>
@@ -136,11 +123,11 @@ function About() {
                         <br/>
                         Then i got an idea: a place where i could bring together everything i do without worrying about numbers on social media
                         <br/>
-                        a place where i could not only challange my self but also have an public compromise and better yet track my skills
+                        a place where i could not only challenge myself but also have a public commitment and better yet track my skills
                         <br/>
                         <br/>
                         <br/>
-                        So this website is'nt only an opportunity for me neighter just an portifolio, 
+                        So this website isn't only an opportunity for me, neither just a portfolio, 
                         <br/>
                         <br/>
                         It's my excuse to create.
@@ -177,7 +164,7 @@ function About() {
                         <br/>
                         <br/>
                         <br/>
-                        As a cooker... 
+                        As a cook... 
                         <br/>
                         <br/>
                         <br/>
@@ -194,7 +181,7 @@ function About() {
                         <br/>
                         <br/>
                         <br/>
-                        <span className='pixel-font font-bold text-cyan-500 text-3xl'>
+                        <span ref={me} className='pixel-font font-bold text-cyan-500 text-3xl inline-block'>
                             As ME.
                         </span> 
                             {/* ME
@@ -227,7 +214,7 @@ function About() {
                         i hope you find something cool or useful here, something that you like
                         <br/>
                         <br/>
-                        (you can aways sugest something new to the site in the discord im creating, hopefully this is going to be a good place for you)
+                        (you can always suggest something new to the site in the discord im creating, hopefully this is going to be a good place for you)
                         <br/>
                         <br/>
                         <br/>
@@ -235,7 +222,7 @@ function About() {
                         me and you
                         <br/>
                         <br/>
-                        WE CAN CREATE GREAT THINGS!
+                        <span className='font-extrabold text-cyan-400 [text-shadow:0_0_1px_currentColor]'>WE CAN CREATE GREAT THINGS!</span>
                         <br/>
                         <br/>
                     

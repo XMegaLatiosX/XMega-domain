@@ -1,176 +1,82 @@
 import { useNavigate, useParams } from "react-router-dom"
-import Screen from "../../components/screen";
-import Header from "../../components/header";
-import NavUpperBar from "../../components/navupperbar";
-import Sidebar from "../../components/sidebar";
-import star_icon from "../../assets/images/star_icon.png";
-import { supabase } from "../../lib/supabase";
-import { useEffect, useState } from "react";
-import SearchBar from "../../components/search-bar";
+import { useEffect, useState } from "react"
+import Screen from "../../components/screen"
+import Header from "../../components/header"
+import NavUpperBar from "../../components/navupperbar"
+import Sidebar from "../../components/sidebar"
+import SearchBar from "../../components/search-bar"
+import star_icon from "../../assets/images/star_icon.png"
+import { supabase } from "../../lib/supabase"
+import SkillCard from "./skill-card"
 
-
-async function get_user_skills(owner) {
-    const {data, error} = await supabase
-    .from("skills")
-    .select("*")
-    .eq("user_id", owner.id)
-    .eq("is_public", true)
-
-    if (error) {
-        console.error(error);
-        return
-    }
-    console.log("got the skills", data);
-    return data   
-}
-
-function Skill({id, thumbnail, name, description, current, target, rating}) {
-
-    const [traits, set_traits] = useState([])
-
-    useEffect(() => {
-        async function get_traits() {
-            const {data, error} = await supabase
-            .from("traits")
-            .select("*")
-            .eq("skill_id", id)
-    
-            if (error) {
-                console.error(error);
-                return
-            }
-            set_traits(data)
-        }get_traits()
-    }, [])
-
-    return (
-        <div className="p-8 flex flex-col items-center w-full bg-gray-900 mb-12 border border-cyan-600 rounded-2xl text-cyan-500">
-            {thumbnail ? <img src={thumbnail} className="h-16" /> : null}
-            <span className="text-4xl font-bold pixel-font">{name}</span>
-            <span className="m-4 text-lg">{description}</span>
-            <div className="flex flex-row items-center gap-2 w-full">
-
-                <img src={current} className={`w-16 h-16 ${current? "": "opacity-0"}`}/>
-
-                <div className="relative h-8 w-175 max-w-full">
-                    <div className="absolute w-full h-full items-center justify-around flex">
-                        <span className="text-white font-bold text-xl z-30">{rating / 10 + "/10"}</span>
-                    </div>
-                    <input type="range" defaultValue={rating}
-                        style={{backgroundImage: `linear-gradient(to right, green ${rating -1}%, #00c950 ${rating}%, #00c950 ${rating - -.5}%, #030712 ${rating - -1}%)`}}
-                            className="border w-full h-7.5 rounded-2xl bg-gray-950 border-cyan-600  appearance-none z-30 outline-0 opacity-75 hover:opacity-95 transition-all duration-100
-                            [&::-webkit-slider-thumb]:opacity-0
-                        "
-                    />
-                </div>
-
-                <img src={target} className={`w-16 h-16 ${target? "": "opacity-0"}`}/>
-
-            </div>
-
-
-            <hr className="my-8"/>
-            {traits.length > 0 ? <span>traits:</span> : null}
-            {traits.map(trait => {
-                return <Traits key={trait.id} name={trait.name} description={trait.description} rating={trait.self_rating}></Traits>
-            })
-            }
-        </div>
-    )
-}
-
-function Traits({name, description, rating}) {
-    return(
-        <div className="bg-gray-800 p-4 flex flex-col items-center w-full pb-6">
-            <span className="font-bold text-2xl">{name}</span>
-            <span className="m-4 text-md">{description}</span>
-            <div className="relative h-8 w-200 max-w-full">
-                <div className="absolute w-full h-full items-center justify-around flex">
-                    <span className="text-white font-bold text-xl z-30">{rating / 10 + "/10"}</span>
-                </div>
-                <input type="range" defaultValue={rating}
-                    style={{backgroundImage: `linear-gradient(to right, green ${rating -1}%, #00c950 ${rating}%, #00c950 ${rating - -.5}%, #030712 ${rating - -1}%)`}}
-                        className="border w-full h-7.5 rounded-2xl bg-gray-950 border-cyan-600  appearance-none z-30 outline-0 opacity-75 hover:opacity-95 transition-all duration-100
-                        [&::-webkit-slider-thumb]:opacity-0
-                    "
-                />
-            </div>
-            <hr className="mt-6 w-full text-gray-500" />
-        </div>
-    )
-}
-
+// The public skills of one person, found by nickname (/self-improvement/<nickname>).
 function Others_improvement() {
     const navigate = useNavigate()
+    const { nickname } = useParams()
 
-    const {nickname} = useParams()
-    
     const [search_results, set_search_results] = useState(null)
-    const [owner, set_owner] = useState(null)
-    const [skills, set_skills] = useState([])
+    const [state, set_state] = useState({ for: null, nickname: null, status: "loading", skills: [] }) // status: loading | ready | missing | error
 
     useEffect(() => {
-        async function get_owner() {
-            const {data, error} = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("nickname_lower", nickname.toLowerCase())
-            .single()
-    
+        let cancelled = false
+        async function load() {
+            const { data: owner, error } = await supabase.from("profiles").select("*").eq("nickname_lower", nickname.toLowerCase()).maybeSingle()
+            if (cancelled) return
             if (error) {
-                console.error(error);
+                console.error(error)
+                set_state({ for: nickname, nickname, status: "error", skills: [] })
                 return
             }
-    
-            set_owner(data)
-            set_skills(await get_user_skills(data))
-            
-        }get_owner()
-
+            if (!owner) {
+                set_state({ for: nickname, nickname, status: "missing", skills: [] })
+                return
+            }
+            const { data, error: skills_error } = await supabase.from("skills").select("*, traits(*)").eq("user_id", owner.id).eq("is_public", true).order("created_at", { ascending: true })
+            if (cancelled) return
+            if (skills_error) {
+                console.error(skills_error)
+                set_state({ for: nickname, nickname, status: "error", skills: [] })
+                return
+            }
+            set_state({ for: nickname, nickname: owner.nickname || nickname, status: "ready", skills: data })
+        }
+        load()
+        return () => { cancelled = true }
     }, [nickname])
 
-
-
-
-    async function search_skills(input_value) {
-        navigate("/self-improvement/" + input_value)
-    }
+    const loading = state.for !== nickname
 
     async function display_skills(input_value) {
-        console.log(input_value);
-        
-        const {data, error} = await supabase.rpc("search_users", {search_term: input_value})
-
+        const { data, error } = await supabase.rpc("search_users", { search_term: input_value })
         if (error) {
-            console.error(error);
+            console.error(error)
             return
         }
         set_search_results(data)
     }
-    
+
     return (
         <Screen>
-            <Header/>
-            <NavUpperBar/>
-            <Sidebar/>
+            <Header />
+            <NavUpperBar />
+            <Sidebar />
             <main className="relative w-screen h-[calc(100vh-7rem)] overflow-auto pt-20 sm:pt-16">
-                
                 <div className="absolute right-4 top-4">
-                    <SearchBar placeholder={"Search others improvement..."} onSearch={search_skills} onChanged={display_skills} results={search_results} onInteract={search_skills} ></SearchBar>
+                    <SearchBar placeholder={"Search others improvement..."} onSearch={(value) => navigate("/self-improvement/" + value)} onChanged={display_skills} results={search_results} onInteract={(value) => navigate("/self-improvement/" + value)} />
                 </div>
 
-                <div className="h-full flex flex-col gap-16 items-center px-4">
-                    <div className="flex flex-row h-32 items-center w-full justify-center gap-4">
-                        <img src={star_icon} className="h-full"/>
-                        <span className="pixel-font text-7xl text-cyan-500 text-center">{nickname}</span>
+                <div className="flex flex-col gap-8 items-center px-4 pb-24">
+                    <div className="flex flex-row items-center w-full justify-center gap-4 pt-4">
+                        <img src={star_icon} alt="" className="h-14 sm:h-20" />
+                        <span className="pixel-font text-4xl sm:text-6xl text-cyan-400 text-center break-all">{nickname}</span>
                     </div>
 
-                    <div className="w-full max-w-200 flex flex-col">
-                        {
-                            skills.map((skill) => {
-                                return <Skill key={skill.id} id={skill.id} thumbnail={skill.icon} name={skill.name} description={skill.description} current={skill.current_level} target={skill.target_level} rating={skill.self_rating}></Skill>
-                            })
-                        }
+                    <div className="w-full max-w-3xl flex flex-col gap-6">
+                        {loading && <span className="text-center text-cyan-700">loading…</span>}
+                        {!loading && state.status === "missing" && <span className="text-center text-cyan-700">nobody called “{nickname}” here.</span>}
+                        {!loading && state.status === "error" && <span className="text-center text-red-400">could not load these skills, try again in a moment.</span>}
+                        {!loading && state.status === "ready" && state.skills.length === 0 && <span className="text-center text-cyan-700">no public skills yet.</span>}
+                        {!loading && state.status === "ready" && state.skills.map((skill) => <SkillCard key={skill.id} skill={skill} />)}
                     </div>
                 </div>
             </main>
