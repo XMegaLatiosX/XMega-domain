@@ -543,12 +543,14 @@ export default function ReactionsLayer() {
             else if (zoom.busy_open && zoom.calm_since && now - zoom.calm_since > S.hold_leave * 1000) zoom.busy_open = false
             zoom.open = rhythm_on() && depth_max > 0.001 && (S.hold_force || now < zoom.open_until || zoom.busy_open)
             zoom.level = clamp(zoom.level + (zoom.open ? dt / (Math.max(0.2, S.hold_in) * 1000) : -dt / (Math.max(0.2, S.hold_out) * 1000)), 0, 1)
-            const key = `${depth_max}|${zoom.level.toFixed(3)}`
+            const key = `${depth_max}|${zoom.level.toFixed(3)}|${S.hold_thin}|${S.hold_fill}`
             if (stage && zoom.shown !== key) {
                 zoom.shown = key
                 stage.style.setProperty("--zoom-items", (1 - depth_max * zoom.level).toFixed(4))
                 stage.style.setProperty("--zoom-logo", (1 - depth_max * 0.5 * zoom.level).toFixed(4)) // the logo shrinks half as much
                 stage.style.setProperty("--open-level", zoom.level.toFixed(3))
+                stage.style.setProperty("--open-thin", String(clamp(S.hold_thin, 0, 1))) // how many of the wall images go away in the open space
+                stage.style.setProperty("--open-fill", String(clamp(S.hold_fill, 0, 1))) // how much the second set fills the gaps
             }
             if (big.fade < 0.01) { thick.style.opacity = "0"; return }
             const badge = document.querySelector(".pixel_logo_gif")

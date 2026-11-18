@@ -394,8 +394,10 @@ html.site-full .home-main { height: 100vh !important; }
 #viz-world .bg-wall .bg-drift { scale: var(--zoom-items, 1); } /* not on .bg-img: the drum reactions write that one */
 #viz-world .logo-stage { scale: var(--zoom-logo, 1); }
 html.site-full #viz-world .logo-stage { top: 50%; } /* full screen: the logo sits in the exact middle */
-/* the second set of images (components/background-wall.jsx) shows up only in open space */
-.bg-extra { opacity: var(--open-level, 0); }
+/* the second set of images (components/background-wall.jsx) fills the gaps in open space, as much as the "fill the gaps" setting says (0 by default) */
+.bg-extra { opacity: calc(var(--open-level, 0) * var(--open-fill, 0)); }
+/* and every other image of the chessboard goes away in open space ("thin out" setting), so the ones left sit much farther apart */
+#viz-world .bg-wall .bg-odd { opacity: calc(1 - var(--open-level, 0) * var(--open-thin, 0)); }
 html.perf-low .bg-extra { display: none; }
 
 /* long text that slides left to show its end and back (components/marquee.jsx) */

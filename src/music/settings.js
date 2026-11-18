@@ -56,6 +56,8 @@ export const SCHEMA = [
     n("song", "break_sens", "break sensitivity", 1, 0, 50, 0.1, "higher = a break is called at a higher volume. 0 = never"),
     n("song", "break_dim", "break wall opacity", 0.4, 0, 1, 0.05, "how visible the images stay in a break"),
     n("song", "hold_zoom", "open space: shrink", 0.5, 0, 0.5, 0.01, "how much the wall images shrink (0.5 = half size) in the open space, which comes in a drop: the images get small and far apart. The page itself never changes size. 0 = off"),
+    n("song", "hold_thin", "open space: thin out", 1, 0, 1, 0.05, "how many of the wall images disappear while the open space is on (1 = every other one, so the ones left are twice as far apart; 0 = none)"),
+    n("song", "hold_fill", "open space: fill the gaps", 0, 0, 1, 0.05, "how much a second set of images fills the gaps between the small ones (0 = none, the images stay far apart; 1 = the old, denser look)"),
     n("song", "hold_bars", "open space: bars (at least)", 8, 1, 64, 1, "the open space lasts at least this many bars (4 beats each) after a drop"),
     n("song", "hold_bars_max", "open space: bars (at most)", 16, 1, 64, 1, "and at most this many: each drop picks a number between the two"),
     n("song", "hold_speed", "open space: image speed", 2.5, 1, 8, 0.1, "how much faster the images move while it is open (1 = same speed)"),

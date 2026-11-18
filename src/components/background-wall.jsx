@@ -244,7 +244,7 @@ export default function BackgroundWall({ mode = "drift", bpm = 144 }) {
         <div ref={wall} className={`bg-wall${active_mode === "step" ? " bg-step" : ""}`} aria-hidden="true" data-pitch={layout.lane_pitch} data-lanes={layout.lane_count} style={{ "--w": `${layout.w}px`, "--dx": `${layout.dx}px`, "--dy": `${layout.dy}px` }}>
             {layout.items.map((item, i) => (
                 <div
-                    className={item.extra ? "bg-drift bg-extra" : "bg-drift"}
+                    className={item.extra ? "bg-drift bg-extra" : item.cell === 1 ? "bg-drift bg-odd" : "bg-drift"}
                     data-j={item.lane}
                     key={item.key}
                     ref={(el) => (nodes.current[i] = el)}
