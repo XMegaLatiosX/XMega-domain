@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { supabase } from "../lib/supabase"
 import { useMusic } from "../music/useMusic"
 import PlayerBars from "../music/PlayerBars"
@@ -27,6 +27,8 @@ export default function Music() {
     const [uploading, set_uploading] = useState(false)
     const [file_name, set_file_name] = useState("")
     const [thumb_name, set_thumb_name] = useState("")
+    const [editing, set_editing] = useState(null) // id of the track being edited (the form below fills with it), or null when adding
+    const form_box = useRef(null)
 
     const fetch_tracks = () => supabase.from("tracks").select("*").order("created_at", { ascending: false })
     function show({ data, error: failure }) {
@@ -50,17 +52,47 @@ export default function Music() {
         play_input(track.url, track.title)
     }
 
+    const clear_form = () => {
+        set_form({ title: "", url: "", bpm: "", note: "", thumbnail: "" })
+        set_file_name("")
+        set_thumb_name("")
+        set_editing(null)
+    }
+
+    // the stored path of a file that was uploaded to the bucket (not a link to somewhere else), or undefined
+    const stored_path = (link) => { const path = link?.split(`/object/public/${BUCKET}/`)[1]; return path ? decodeURIComponent(path) : undefined }
+
+    function start_edit(track) {
+        set_error("")
+        set_editing(track.id)
+        set_form({ title: track.title, url: track.url, bpm: track.bpm ? String(track.bpm) : "", note: track.note || "", thumbnail: track.thumbnail || "" })
+        set_file_name("")
+        set_thumb_name("")
+        setTimeout(() => form_box.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 0)
+    }
+
     async function add(event) {
         event.preventDefault()
         set_error("")
         const row = { title: form.title.trim(), url: form.url.trim(), bpm: form.bpm ? Number(form.bpm) : null, note: form.note.trim() || null }
-        if (form.thumbnail.trim()) row.thumbnail = form.thumbnail.trim() // (needs supabase/music-thumbnail.sql, run once)
         if (!row.title || !/^https?:\/\//i.test(row.url)) { set_error("a title and a link starting with http are needed"); return }
+        if (editing) {
+            const old = tracks.find((track) => track.id === editing)
+            const thumbnail = form.thumbnail.trim() || null
+            if (thumbnail || old?.thumbnail) row.thumbnail = thumbnail // (needs supabase/music-thumbnail.sql, run once); an emptied field takes the picture off
+            const { error: failure } = await supabase.from("tracks").update(row).eq("id", editing)
+            if (failure) { set_error("could not save it (are you logged in as admin?)"); console.error(failure); return }
+            // a song or picture that was uploaded here and has been replaced is not needed in the storage any more
+            const gone = [old?.url !== row.url ? stored_path(old?.url) : undefined, old?.thumbnail && old.thumbnail !== thumbnail ? stored_path(old.thumbnail) : undefined].filter(Boolean)
+            if (gone.length) await supabase.storage.from(BUCKET).remove(gone)
+            clear_form()
+            load()
+            return
+        }
+        if (form.thumbnail.trim()) row.thumbnail = form.thumbnail.trim() // (needs supabase/music-thumbnail.sql, run once)
         const { error: failure } = await supabase.from("tracks").insert(row)
         if (failure) { set_error(row.thumbnail ? "could not add it (did you run supabase/music-thumbnail.sql, and are you logged in as admin?)" : "could not add it (are you logged in as admin?)"); return }
-        set_form({ title: "", url: "", bpm: "", note: "", thumbnail: "" })
-        set_file_name("")
-        set_thumb_name("")
+        clear_form()
         load()
     }
 
@@ -109,7 +141,7 @@ export default function Music() {
         const { error: failure } = await supabase.from("tracks").delete().eq("id", id)
         set_confirm_id(null)
         if (failure) set_error("could not delete it")
-        else load()
+        else { if (editing === id) clear_form(); load() }
     }
 
     const input = "h-9 px-2 bg-gray-950 border border-cyan-800 text-cyan-100 outline-none focus:border-cyan-500 min-w-0"
@@ -142,6 +174,9 @@ export default function Music() {
                                         <div className="text-xs text-cyan-600 truncate [text-shadow:0_0_4px_#000]">{[track.bpm ? `${track.bpm} BPM` : "", track.note].filter(Boolean).join(" · ")}</div>
                                     </div>
                                     {admin && (
+                                        <button type="button" onClick={() => start_edit(track)} className={`h-8 px-2 text-xs border cursor-pointer ${editing === track.id ? "border-cyan-400 text-cyan-200 bg-cyan-950" : "border-cyan-800 text-cyan-300 hover:bg-cyan-950"}`}>edit</button>
+                                    )}
+                                    {admin && (
                                         <button type="button" onClick={() => remove(track.id)} onBlur={() => set_confirm_id(null)} className="h-8 px-2 text-xs border border-red-900 text-red-400 hover:bg-red-950 cursor-pointer">
                                             {confirm_id === track.id ? "sure?" : "delete"}
                                         </button>
@@ -151,8 +186,8 @@ export default function Music() {
                         })}
                         {error && <span className="text-amber-300 text-sm">{error}</span>}
                         {admin && (
-                            <form onSubmit={add} className="mt-4 p-2 border border-cyan-900 flex flex-col gap-2">
-                                <span className="text-cyan-400 text-sm">add a track (admin)</span>
+                            <form ref={form_box} onSubmit={add} className={`mt-4 p-2 border flex flex-col gap-2 ${editing ? "border-cyan-400" : "border-cyan-900"}`}>
+                                <span className="text-cyan-400 text-sm">{editing ? "editing a track (admin)" : "add a track (admin)"}</span>
                                 <input className={input} placeholder="title" value={form.title} maxLength={120} onChange={(e) => set_form({ ...form, title: e.target.value })} />
                                 <input className={input} placeholder="link (soundcloud, youtube) or upload a file below" value={form.url} maxLength={500} onChange={(e) => set_form({ ...form, url: e.target.value })} />
                                 <label className="h-9 px-2 flex items-center gap-2 border border-dashed border-cyan-800 text-cyan-300 hover:bg-cyan-950 cursor-pointer text-sm">
@@ -160,9 +195,9 @@ export default function Music() {
                                     {uploading ? "uploading..." : file_name ? `uploaded: ${file_name}` : "upload an audio file (mp3, wav, ogg, m4a, flac; up to 50 MB)"}
                                 </label>
                                 <div className="flex gap-2">
-                                    <input className={`${input} flex-1`} placeholder="thumbnail link (optional) or upload an image" value={form.thumbnail} maxLength={500} onChange={(e) => set_form({ ...form, thumbnail: e.target.value })} />
+                                    <input className={`${input} flex-1`} placeholder="thumbnail link (optional) or upload an image / gif" value={form.thumbnail} maxLength={500} onChange={(e) => set_form({ ...form, thumbnail: e.target.value })} />
                                     <label className="h-9 px-3 flex items-center shrink-0 border border-dashed border-cyan-800 text-cyan-300 hover:bg-cyan-950 cursor-pointer text-sm">
-                                        <input type="file" accept="image/*" onChange={upload_thumb} disabled={uploading} className="hidden" />
+                                        <input type="file" accept="image/png,image/jpeg,image/gif,image/webp,image/avif,.png,.jpg,.jpeg,.gif,.webp,.avif" onChange={upload_thumb} disabled={uploading} className="hidden" />
                                         {thumb_name ? "image ✓" : "image"}
                                     </label>
                                 </div>
@@ -170,7 +205,10 @@ export default function Music() {
                                     <input className={`${input} w-24`} placeholder="BPM" inputMode="numeric" value={form.bpm} onChange={(e) => set_form({ ...form, bpm: e.target.value.replace(/\D/g, "").slice(0, 3) })} />
                                     <input className={`${input} flex-1`} placeholder="note (optional)" value={form.note} maxLength={200} onChange={(e) => set_form({ ...form, note: e.target.value })} />
                                 </div>
-                                <button type="submit" className="h-9 border-2 border-cyan-500 bg-cyan-950 text-cyan-200 hover:bg-cyan-900 cursor-pointer">add</button>
+                                <div className="flex gap-2">
+                                    <button type="submit" className="h-9 flex-1 border-2 border-cyan-500 bg-cyan-950 text-cyan-200 hover:bg-cyan-900 cursor-pointer">{editing ? "save" : "add"}</button>
+                                    {editing && <button type="button" onClick={clear_form} className="h-9 px-4 border border-cyan-800 text-cyan-300 hover:bg-cyan-950 cursor-pointer">cancel</button>}
+                                </div>
                             </form>
                         )}
                     </div>

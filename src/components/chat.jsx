@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { supabase } from "../lib/supabase"
-import { load_recent, subscribe_messages, post_message, post_as_account, account_info, visitor_color, keep_recent, MAX_BODY, NICK_MIN, NICK_MAX, COOLDOWN_MS } from "../lib/chat"
+import { useIsAdmin } from "../lib/admin"
+import { load_recent, subscribe_messages, delete_message, post_message, post_as_account, account_info, visitor_color, keep_recent, MAX_BODY, NICK_MIN, NICK_MAX, COOLDOWN_MS } from "../lib/chat"
 import { color_for, is_color } from "../lib/nick-color"
 
 // The live chat: a small live wall on the home page (it keeps only the last messages; the mural page is a different thing, see pages/mural.jsx), laid out like a game chat ("Nick: message", every nick in its own colour).
@@ -50,11 +51,13 @@ export default function Chat({ shifted = false }) {
     // and the time after that it dodges back down. Then it behaves normally for good (saved in this browser).
     const prank = useRef(read(PRANK_KEY) === "1" ? 2 : 0) // 0 = not yet, 1 = dodged up, 2 = over
     const [dodged, set_dodged] = useState(false)
+    const admin = useIsAdmin()
+    const [sure, set_sure] = useState(null) // id of the message whose delete button was pressed once (the second press deletes)
 
     useEffect(() => {
         let alive = true
         load_recent().then((rows) => { if (alive) set_messages((current) => rows.reduce(keep_recent, current)) }).catch(() => { if (alive) set_error("the chat is offline") })
-        const stop = subscribe_messages((row) => set_messages((current) => keep_recent(current, row)))
+        const stop = subscribe_messages((row) => set_messages((current) => keep_recent(current, row)), (id) => set_messages((current) => current.filter((item) => item.id !== id)))
         return () => { alive = false; stop() }
     }, [])
 
@@ -127,6 +130,11 @@ export default function Chat({ shifted = false }) {
         if (prank.current === 0) { prank.current = 1; set_dodged(true) }
         else { prank.current = 2; set_dodged(false); write(PRANK_KEY, "1") }
     }
+    async function remove(id) {
+        if (sure !== id) { set_sure(id); return }
+        set_sure(null)
+        try { await delete_message(id); set_messages((current) => current.filter((item) => item.id !== id)) } catch (failure) { console.error(failure); set_error("could not delete it") }
+    }
     const stop_keys = (event) => event.stopPropagation() // typing here is not for the site's shortcuts
 
     const bubble = (
@@ -151,6 +159,7 @@ export default function Chat({ shifted = false }) {
                 {shown.length === 0 && <p className="text-cyan-600">{error === "the chat is offline" ? error : "nothing here yet: be the first"}</p>}
                 {shown.map((message) => (
                     <p key={message.id} className="break-words">
+                        {admin && <button type="button" onClick={() => remove(message.id)} onBlur={() => set_sure(null)} title="delete this message (admin)" className={`mr-1 w-6 inline-block text-center border cursor-pointer align-baseline ${sure === message.id ? "border-red-500 text-red-300 bg-red-950" : "border-red-900 text-red-500 hover:bg-red-950"}`}>{sure === message.id ? "ok?" : "x"}</button>}
                         <span className="nick-glow" style={{ color: color_of(message) }}>{message.nick}</span><span className="text-cyan-100">: {message.body}</span>
                     </p>
                 ))}

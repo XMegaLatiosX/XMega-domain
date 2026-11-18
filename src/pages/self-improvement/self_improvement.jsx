@@ -106,10 +106,13 @@ function SkillEditor({ user, skill, on_saved, on_cancel }) {
             <div className="flex flex-wrap items-end gap-3">
                 <PictureInput label="icon" preview={previews.thumbnail} on_pick={(file) => pick("thumbnail", file)} />
                 <input value={name} onChange={(event) => set_name(event.target.value)} className={`${field} grow min-w-40 text-xl`} placeholder="skill name, ex: Pixel art" maxLength={80} />
-                <label className="flex items-center gap-2 text-sm text-cyan-200 cursor-pointer select-none pb-2">
-                    <input type="checkbox" checked={is_public} onChange={(event) => set_is_public(event.target.checked)} className="accent-cyan-400 w-4 h-4" />
-                    public
-                </label>
+                <div className="flex flex-col gap-1" role="group" aria-label="who can see this skill">
+                    <div className="flex border-2 border-cyan-800 pixel-font text-base select-none">
+                        <button type="button" aria-pressed={is_public} onClick={() => set_is_public(true)} className={`px-3 py-1 cursor-pointer ${is_public ? "bg-cyan-400 text-black" : "text-cyan-600 hover:bg-cyan-950"}`}>public</button>
+                        <button type="button" aria-pressed={!is_public} onClick={() => set_is_public(false)} className={`px-3 py-1 cursor-pointer ${!is_public ? "bg-yellow-400 text-black" : "text-cyan-600 hover:bg-cyan-950"}`}>private</button>
+                    </div>
+                    <span className={`text-[11px] ${is_public ? "text-cyan-500" : "text-yellow-400"}`}>{is_public ? "anyone can see this skill" : "only you can see this skill"}</span>
+                </div>
             </div>
 
             <textarea value={description} onChange={(event) => set_description(event.target.value)} className={`${field} min-h-24`} placeholder="description *optional: what is this skill, and what does getting better at it mean?" />
@@ -186,6 +189,12 @@ function Self_improvement() {
         set_sure_to_delete(null)
         set_skills((old) => old.filter((skill) => skill.id !== id))
     }
+    async function toggle_visibility(skill) {
+        const is_public = skill.is_public === false // the new value
+        const { error } = await supabase.from("skills").update({ is_public }).eq("id", skill.id)
+        if (error) { console.error(error); return }
+        set_skills((old) => old.map((item) => (item.id === skill.id ? { ...item, is_public } : item)))
+    }
     async function saved() {
         set_editing(null)
         await load()
@@ -225,6 +234,7 @@ function Self_improvement() {
                             ? <SkillEditor key={skill.id} user={user} skill={skill} on_saved={saved} on_cancel={() => set_editing(null)} />
                             : (
                                 <SkillCard key={skill.id} skill={skill}>
+                                    <OwnerButton onClick={() => toggle_visibility(skill)}>{skill.is_public === false ? "make public" : "make private"}</OwnerButton>
                                     <OwnerButton onClick={() => set_editing(skill.id)}>edit</OwnerButton>
                                     <OwnerButton danger onClick={() => delete_skill(skill.id)}>{sure_to_delete === skill.id ? "sure?" : "delete"}</OwnerButton>
                                 </SkillCard>

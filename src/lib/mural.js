@@ -1,5 +1,6 @@
 import { supabase } from "./supabase"
 import { client, ensure_session, send_error } from "./anon-client"
+import { delete_row } from "./admin"
 
 // The mural page: a guestbook that keeps everyone who came by and wrote something (table guestbook, see supabase/mural-split.sql).
 // It is apart from the live chat on the home page (lib/chat.js): nothing written there is kept here and the other way round.
@@ -27,3 +28,6 @@ export async function post_entry_as_account(info, body) {
     if (error) throw send_error(error)
     return data
 }
+
+// admin only (supabase/moderation.sql)
+export const delete_entry = (id) => delete_row(TABLE, id)

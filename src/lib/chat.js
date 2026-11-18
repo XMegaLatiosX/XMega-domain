@@ -1,5 +1,6 @@
 import { supabase } from "./supabase"
 import { client, ensure_session, send_error } from "./anon-client"
+import { delete_row } from "./admin"
 
 // The live chat on the home page (table chat_messages, see supabase/mural-split.sql). It is a short-lived talk, not the mural page.
 export { account_info, visitor_color, NICK_MIN, NICK_MAX } from "./anon-client"
@@ -18,8 +19,12 @@ export async function load_recent() {
 }
 
 // calls on_row for each new message, live; returns the function that stops it
-export function subscribe_messages(on_row) {
-    const channel = client.channel("chat").on("postgres_changes", { event: "INSERT", schema: "public", table: TABLE }, (payload) => on_row(payload.new)).subscribe()
+// on_gone(id) is called when the admin deletes a message
+export function subscribe_messages(on_row, on_gone) {
+    const channel = client.channel("chat")
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: TABLE }, (payload) => on_row(payload.new))
+        .on("postgres_changes", { event: "DELETE", schema: "public", table: TABLE }, (payload) => { if (on_gone && payload.old?.id) on_gone(payload.old.id) })
+        .subscribe()
     return () => { client.removeChannel(channel) }
 }
 
@@ -40,3 +45,6 @@ export function keep_recent(list, row) {
     if (list.some((item) => item.id === row.id)) return list
     return [...list, row].slice(-KEPT)
 }
+
+// admin only (supabase/moderation.sql)
+export const delete_message = (id) => delete_row(TABLE, id)

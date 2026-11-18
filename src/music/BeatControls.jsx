@@ -57,7 +57,7 @@ export default function BeatControls() {
         <div className="flex items-center gap-1 shrink-0" data-music-ui>
             {CAN_FOLLOW && <button type="button" className={`${small} ${mode === "auto" || analyzing ? on : ""}`} onClick={auto} title={hint} aria-label="auto: follow the music's beat">auto sync</button>}
             <button
-                type="button" className={`${small} ${mode === "manual" && taps > 0 ? on : ""}`}
+                type="button" className={`${small} w-12 text-center ${mode === "manual" && taps > 0 ? on : ""}`} /* fixed width: "tap 12" must not push the other buttons around under the pointer */
                 onPointerDown={tap} onClick={(event) => { if (event.detail === 0) tap() }}
                 title="Tap the beat (T key). It counts from the 2nd tap: the gap is the tempo, the last tap is a beat."
                 aria-label="tap the beat"
@@ -73,15 +73,14 @@ export default function BeatControls() {
                 onBlur={commit}
                 onKeyDown={(event) => { if (event.key === "Enter") event.currentTarget.blur(); if (event.key === "Escape") { set_draft(null); event.currentTarget.blur() } }}
                 title="Type a BPM and press Enter"
-                className={`h-5 w-14 px-1 text-center text-[11px] leading-none bg-transparent border border-cyan-800 text-cyan-100 placeholder:text-cyan-600 ${mode === "idle" ? "opacity-70" : ""}`}
+                className={`h-5 w-14 shrink-0 px-1 text-center text-[11px] leading-none bg-transparent border border-cyan-800 text-cyan-100 placeholder:text-cyan-600 ${mode === "idle" ? "opacity-70" : ""}`}
             />
             {/* manual beat: opens the pad on the home page, where the visualizer is */}
             {pathname === "/" && (
                 <button type="button" className={`${small} ${pad ? on : ""}`} onClick={() => toggle_panel("pad")} aria-pressed={pad} title="Manual beat: fire the effects by hand" aria-label="manual beat pad">pad</button>
             )}
-            {mode !== "idle" && (
-                <button type="button" className={small} onClick={reset} title="Back to the idle beat (144) and stop listening to the tab" aria-label="reset the beat">×</button>
-            )}
+            {/* always in the row (hidden while idle) so the first tap does not add a button and shift the others */}
+            <button type="button" className={`${small} ${mode === "idle" ? "invisible" : ""}`} onClick={reset} disabled={mode === "idle"} tabIndex={mode === "idle" ? -1 : 0} title="Back to the idle beat (144) and stop listening to the tab" aria-label="reset the beat">×</button>
         </div>
     )
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { supabase } from "../lib/supabase"
-import { load_entries, post_entry, post_entry_as_account, account_info, visitor_color, MAX_BODY, NICK_MIN, NICK_MAX } from "../lib/mural"
+import { useIsAdmin } from "../lib/admin"
+import { load_entries, delete_entry, post_entry, post_entry_as_account, account_info, visitor_color, MAX_BODY, NICK_MIN, NICK_MAX } from "../lib/mural"
 import { color_for, is_color } from "../lib/nick-color"
 
 // The guestbook of the mural page: write a nickname and a message and they stay here, newest first. Only people who write are kept.
@@ -25,6 +26,8 @@ export default function Mural() {
     const [error, set_error] = useState("")
     const [sending, set_sending] = useState(false)
     const [done, set_done] = useState(false)
+    const admin = useIsAdmin()
+    const [sure, set_sure] = useState(null) // id of the entry whose delete button was pressed once (the second press deletes)
     const [fresh, set_fresh] = useState(null) // the entry just written: it arrives with a glow
 
     const merge = (list, rows) => [...list, ...rows.filter((row) => !list.some((item) => item.id === row.id))]
@@ -51,6 +54,12 @@ export default function Mural() {
             set_total(all)
         } catch { set_error("could not load more") }
         set_loading(false)
+    }
+
+    async function remove(id) {
+        if (sure !== id) { set_sure(id); return }
+        set_sure(null)
+        try { await delete_entry(id); set_entries((list) => list.filter((item) => item.id !== id)); set_total((count) => Math.max(0, count - 1)) } catch (failure) { console.error(failure); set_error("could not delete it") }
     }
 
     async function submit(event) {
@@ -101,6 +110,7 @@ export default function Mural() {
                                 <p className="nick-glow pixel-font text-2xl break-words" style={{ color: color_of(entry) }}>{entry.nick}</p>
                                 <p className="mt-2 text-lg leading-relaxed text-cyan-50 whitespace-pre-wrap break-words px-2" style={serif}>{entry.body}</p>
                                 <p className="mt-2 text-[11px] text-cyan-800">{when(entry.created_at)}</p>
+                                {admin && <button type="button" onClick={() => remove(entry.id)} onBlur={() => set_sure(null)} className={`mt-1 h-6 px-2 text-[11px] border cursor-pointer ${sure === entry.id ? "border-red-500 text-red-300 bg-red-950" : "border-red-900 text-red-500 hover:bg-red-950"}`}>{sure === entry.id ? "sure?" : "delete (admin)"}</button>}
                             </li>
                         ))}
                         {!loading && !offline && entries.length === 0 && <li className="text-center text-cyan-700 italic" style={serif}>the wall is empty. the first word is yours.</li>}

@@ -33,7 +33,9 @@ export default function SkillCard({ skill, children }) {
                     : <div className="w-14 h-14 border-2 border-cyan-900 bg-cyan-950 flex items-center justify-center pixel-font text-2xl text-cyan-700 shrink-0">{(skill.name || "?").charAt(0).toUpperCase()}</div>}
                 <div className="min-w-0 grow">
                     <h3 className="pixel-font text-2xl text-cyan-300 break-words">{skill.name || "untitled skill"}</h3>
-                    {skill.is_public === false && <span className="inline-block mt-1 px-1.5 border border-yellow-600 text-yellow-400 text-[11px] pixel-font">private</span>}
+                    {children && (skill.is_public === false
+                        ? <span className="inline-block mt-1 px-1.5 border border-yellow-500 bg-yellow-400 text-black text-xs pixel-font">private · only you</span>
+                        : <span className="inline-block mt-1 px-1.5 border border-cyan-500 bg-cyan-950 text-cyan-200 text-xs pixel-font">public · anyone can see</span>)}
                 </div>
                 {children && <div className="flex gap-2 shrink-0">{children}</div>}
             </header>
