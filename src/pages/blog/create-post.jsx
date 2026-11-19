@@ -11,8 +11,11 @@ import { v4 } from "uuid"
 
 import star_icon from "../../assets/images/star_icon.png"
 
-function Content_input_div({id, content_value, on_delete, on_change}) {
+function Content_input_div({id, post_id, content_value, on_delete, on_change}) {
     const [ selected_type, set_selected_type ] = useState(content_value.type? content_value.type :"text")
+    const [ uploading, set_uploading ] = useState(false)
+    const [ upload_error, set_upload_error ] = useState("")
+    const embed_area = useRef(null)
     const [ image, set_image ] = useState(content_value.type === "image"? content_value.value:null)
     const [ audio, set_audio ] = useState(content_value.type === "audio"? content_value.value:null)
     const [ video, set_video ] = useState(content_value.type === "video"? content_value.value:null)
@@ -22,6 +25,14 @@ function Content_input_div({id, content_value, on_delete, on_change}) {
         console.log("CONTEUDO Q CHEGOU:", content_value);
         set_selected_type(content_value.type)
     }, [content_value.type, content_value.value])
+
+    // the embed box grows with its code (never smaller than the starting height; the corner handle still resizes it by hand)
+    useEffect(() => {
+        const area = embed_area.current
+        if (!area) return
+        area.style.height = "auto"
+        area.style.height = `${Math.max(area.scrollHeight + 2, 160)}px`
+    }, [embed, selected_type])
 
     const update_content = (value, type) => {
         if (type === "text") {
@@ -58,6 +69,27 @@ function Content_input_div({id, content_value, on_delete, on_change}) {
 
     }
     
+    // picks a picture, sends it to the blog_media bucket right away and adds an <img> with its public link at the end of the embed code
+    const add_embed_image = async (e) => {
+        const file = e.target.files[0]
+        e.target.value = ""
+        if (!file) return
+        set_uploading(true)
+        set_upload_error("")
+        const ext = (file.name.split(".").pop() || "png").toLowerCase()
+        const path = `${post_id}/embed-${v4()}.${ext}`
+        const { error } = await supabase.storage.from("blog_media").upload(path, file, { contentType: file.type || undefined, cacheControl: "31536000" })
+        set_uploading(false)
+        if (error) {
+            console.error(error)
+            set_upload_error(error.message)
+            return
+        }
+        const { data } = supabase.storage.from("blog_media").getPublicUrl(path)
+        const tag = `<img src="${data.publicUrl}" alt="">`
+        update_content(embed ? `${embed}\n${tag}` : tag, "embed")
+    }
+
     function Render_content() {
         switch (selected_type) {
             case "text":
@@ -89,9 +121,15 @@ function Content_input_div({id, content_value, on_delete, on_change}) {
                 
             case "embed":
                 return (
-                    <div className="relative min-w-64 w-fit max-w-full min-h-64 flex">
-                        <textarea placeholder="Embed code..." id={id} onChange={(e) => update_content(e.target.value, "embed")} value={embed} className="p-0.5 pl-2 max-h-64 min-h-64 min-w-64 bg-gray-950 border border-cyan-600 rounded-sm"/>
-                            <p className="scale-75 max-w-12 relative bottom-8"  dangerouslySetInnerHTML={{__html: embed}}></p>
+                    <div className="relative flex-1 min-w-0 flex flex-col gap-2">
+                        <label className="h-7 w-fit px-2 flex items-center gap-2 whitespace-nowrap text-sm border rounded-sm border-cyan-600 bg-gray-950 hover:border-[rgb(83,91,243)] transition-all duration-300 cursor-pointer">
+                            <input type="file" accept="image/*" className="hidden" disabled={uploading} onChange={add_embed_image}/>
+                            {uploading ? "uploading..." : "+ add image to the embed"}
+                            {upload_error && <span className="text-amber-300 text-xs">failed: {upload_error}</span>}
+                        </label>
+                        <textarea ref={embed_area} placeholder="Embed code..." id={id} onChange={(e) => update_content(e.target.value, "embed")} value={embed ?? ""} className="p-0.5 pl-2 w-full h-40 min-h-24 resize-y bg-gray-950 border border-cyan-600 rounded-sm"/>
+                        {/* how it will look in the post: full width, grows with what is inside */}
+                        {embed && <div className="w-full p-3 border border-cyan-900 rounded-sm text-center font-bold break-words [&_img]:max-w-full [&_img]:mx-auto [&_iframe]:max-w-full [&_video]:max-w-full" dangerouslySetInnerHTML={{__html: embed}}></div>}
                             {/* YouTube
                             Twitch
                             Spotify
@@ -122,7 +160,7 @@ function Content_input_div({id, content_value, on_delete, on_change}) {
         }
     }
     return (
-        <div name={id} className="relative flex flex-row mb-12 w-full h-64">
+        <div name={id} className={`relative flex shrink-0 mb-12 w-full ${selected_type === "embed" ? "flex-col sm:flex-row gap-2 sm:gap-0 min-h-64" : "flex-row h-64"}`}>
             <select name="content_type" className="p-0.5 pl-2 bg-gray-950 border border-cyan-600 rounded-sm max-h-7.5 mr-2" value={selected_type} onChange={(e) => set_selected_type(e.target.value)}>
                 <option value="text">text</option>
                 <option value="image">img</option>
@@ -151,7 +189,9 @@ function CreatePost() {
 
 
     const [content_list, set_content_list] = useState([])
-    
+    // one id for the whole editing session, so pictures sent to the embed block go to the post's own folder before it is saved
+    const new_post_id = useRef(v4())
+
     const navigate = useNavigate()
     
     const [user, setUser] = useState(null)
@@ -221,7 +261,7 @@ function CreatePost() {
         e.preventDefault()
 
         const editing = !!old_post_id
-        const post_id = old_post_id ?? v4()
+        const post_id = old_post_id ?? new_post_id.current
         
         
         let formated_content = []
@@ -233,9 +273,13 @@ function CreatePost() {
                 console.log(c.type);
                 
                 const input = document.getElementById(c.id)
-                const file = input.files[0]
+                const file = input.files?.[0]
+                if (!file) {
+                    // no new file picked: keep the link the block already has (editing a saved post)
+                    if (c.value) formated_content.push({type: c.type, value: c.value})
+                    continue
+                }
                 const ext = file.name.split('.').pop()
-                if (!input.files?.length)  continue
                 if (input.files.length > 0) {
                     const file_path = `${post_id}/${c.id}.${ext}`
 
@@ -400,17 +444,20 @@ function CreatePost() {
                 ...content_list.filter(c => c.type !== "text" && c.type !== "embed")
                 .map(c=> `${c.id}`)
             ])
+            // pictures put inside text / embed code are used too: keep every file whose link is still in the code
+            const written_code = content_list.filter(c => c.type === "text" || c.type === "embed").map(c => c.value || "").join("\n")
+
             console.log("deletação:");
-            
+
             console.log(files);
             console.log(used_files_id);
-            
+
             await supabase.storage
             .from("blog_media")
             .remove(
                 files.filter(file => {
                     const id = file.name.split(".")[0];
-                    return !used_files_id.has(id);
+                    return !used_files_id.has(id) && !written_code.includes(`/${post_id}/${file.name}`);
                 })
                 .map(file => `${post_id}/${file.name}`)
             )
@@ -510,7 +557,7 @@ function CreatePost() {
 
                         {
                             content_list.map((content) => {
-                                return <Content_input_div id={content.id} key={content.id} on_delete={remove_content_block} content_value={content} on_change={(val, type) => update_content_block(content.id, val, type)}></Content_input_div>
+                                return <Content_input_div id={content.id} post_id={old_post_id ?? new_post_id.current} key={content.id} on_delete={remove_content_block} content_value={content} on_change={(val, type) => update_content_block(content.id, val, type)}></Content_input_div>
                             })
                         }
 

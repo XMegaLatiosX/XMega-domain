@@ -1,4 +1,4 @@
-import { Link, useParams } from "react-router-dom"
+import { Link, useLocation, useParams } from "react-router-dom"
 import Header from "../../components/header"
 import NavUpperBar from "../../components/navupperbar"
 import Screen from "../../components/screen"
@@ -12,6 +12,7 @@ import { supabase } from "../../lib/supabase"
 
 function Project() {
     const { project_url_title } = useParams()
+    const { hash } = useLocation()
     const [project, set_project] = useState(null)
     const [loading, set_Loading] = useState(true)
     const [user, set_user] = useState(null)
@@ -45,6 +46,14 @@ function Project() {
         load_project()
     }, [project_url_title])
     
+    // a link to a section (/projects/<name>#some-id): the content arrives after the page opens, so the browser cannot scroll to it by itself
+    useEffect(() => {
+        if (!project || !hash) return
+        let id = hash.slice(1)
+        try { id = decodeURIComponent(id) } catch { /* keep it as it is */ }
+        document.getElementById(id)?.scrollIntoView()
+    }, [project, hash])
+
     if (loading) return <Screen></Screen>
     if (!project) return (
         <Screen>
