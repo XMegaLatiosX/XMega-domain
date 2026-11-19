@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom"
 import AdminFab from "../../components/admin-fab"
 import { StatusBadge } from "../../components/content-blocks"
+import { PROJECT_THUMBS } from "../../components/project-thumbs"
 import { supabase } from "../../lib/supabase"
 import { useEffect, useState } from "react"
 
@@ -10,11 +11,21 @@ import Screen from "../../components/screen"
 import Sidebar from "../../components/sidebar"
 
 
-// The cover is the first image of the project; without one, a big letter on a dark tile.
-function ProjectCard({ title, description, last_update, status, url, content }) {
+// first picture inside the html of the embeds and texts (uploaded with the embed button)
+function first_embedded_image(blocks) {
+    for (const block of blocks) {
+        if (block.type !== "embed" && block.type !== "text") continue
+        const found = /<img[^>]+src=["']([^"']+)["']/i.exec(block.value || "")
+        if (found) return found[1]
+    }
+    return null
+}
+
+// The cover is the thumbnail, else one set in project-thumbs.jsx, else the first image of the project, else a picture inside an embed, else a big letter on a dark tile.
+function ProjectCard({ title, description, last_update, status, url, content, thumbnail }) {
     const last_update_date = last_update ? last_update.split("T")[0] : ""
     const blocks = content || []
-    const cover = blocks.find((block) => block.type === "image")?.value
+    const cover = thumbnail || PROJECT_THUMBS[url.split("/").pop()] || blocks.find((block) => block.type === "image")?.value || first_embedded_image(blocks)
     const count = (type) => blocks.filter((block) => block.type === type).length
     const parts = [["image", "images"], ["video", "videos"], ["audio", "audio"], ["embed", "embeds"]].map(([type, name]) => (count(type) ? `${count(type)} ${name}` : "")).filter(Boolean)
     return (
@@ -94,6 +105,7 @@ function Projects() {
                             last_update={project.last_update}
                             url={`/projects/${project.url_title}`}
                             content={project.content}
+                            thumbnail={project.thumbnail}
                             />
                         })
                     }
